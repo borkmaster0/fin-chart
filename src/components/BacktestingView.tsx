@@ -109,6 +109,7 @@ const BacktestingView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'summary' | 'withdrawal' | 'rolling' | 'annual'>('summary');
   const [selectedPortfolios, setSelectedPortfolios] = useState<Set<string>>(new Set());
   const [legendValues, setLegendValues] = useState<{ [portfolioId: string]: string }>({});
+  const [stockLegendValues, setStockLegendValues] = useState<{ [symbol: string]: string }>({});
   const [expandedPortfolio, setExpandedPortfolio] = useState<string | null>(null);
   const [priceChartData, setPriceChartData] = useState<{ [symbol: string]: { time: number; value: number }[] }>({});
   const [selectedSymbols, setSelectedSymbols] = useState<Set<string>>(new Set());
@@ -633,22 +634,23 @@ const BacktestingView: React.FC = () => {
     // Price Chart
     chartRefTwo.current = priceChart;
 
-    if (priceChart && priceChartData) {
-      let idx = 0;
-      Object.entries(priceChartData).forEach(([symbol, seriesData]) => {
-        if (selectedSymbols.has(symbol)) {
-          const color = PORTFOLIO_COLORS[idx % PORTFOLIO_COLORS.length];
-          const lineSeries = priceChart.addSeries(LineSeries, {
-            color,
-            lineWidth: 2,
-            title: symbol,
-          });
-          lineSeries.setData(seriesData);
-        }
-        idx++;
-      });
-      priceChart.timeScale().fitContent();
-    }
+    // Stock price chart legend values
+    const stockSeriesMap = new Map();
+    let idx = 0;
+    Object.entries(priceChartData).forEach(([symbol, seriesData]) => {
+      if (selectedSymbols.has(symbol)) {
+        const color = PORTFOLIO_COLORS[idx % PORTFOLIO_COLORS.length];
+        const lineSeries = priceChart.addSeries(LineSeries, {
+          color,
+          lineWidth: 2,
+          title: symbol,
+        });
+        lineSeries.setData(seriesData);
+        stockSeriesMap.set(symbol, lineSeries);
+      }
+      idx++;
+    });
+    priceChart.timeScale().fitContent();
 
     // Subscribe to crosshair move for legend updates
     chart.subscribeCrosshairMove(param => {
@@ -676,6 +678,33 @@ const BacktestingView: React.FC = () => {
         }
       });
       setLegendValues(newLegendValues);
+    });
+
+    // Subscribe to crosshair move for stock legend updates
+    priceChart.subscribeCrosshairMove(param => {
+      if (!param.time || param.point.x < 0 || param.point.y < 0) {
+        const defaultValues: { [symbol: string]: string } = {};
+        Object.keys(priceChartData).forEach(symbol => {
+          defaultValues[symbol] = '-';
+        });
+        setStockLegendValues(defaultValues);
+        return;
+      }
+      const newLegendValues: { [symbol: string]: string } = {};
+      Object.keys(priceChartData).forEach((symbol, idx) => {
+        if (selectedSymbols.has(symbol)) {
+          const series = stockSeriesMap.get(symbol);
+          const value = param.seriesData.get(series);
+          if (value && typeof value.value === 'number') {
+            newLegendValues[symbol] = formatCurrency(value.value);
+          } else {
+            newLegendValues[symbol] = '-';
+          }
+        } else {
+          newLegendValues[symbol] = '-';
+        }
+      });
+      setStockLegendValues(newLegendValues);
     });
 
     // Handle resize
@@ -1295,6 +1324,26 @@ const BacktestingView: React.FC = () => {
                         {symbol}
                       </button>
                     ))}
+                  </div>
+                )}
+                {/* Stock Chart Legend */}
+                {priceChartData && Object.keys(priceChartData).length > 0 && (
+                  <div className="mb-3 p-3 bg-white/90 dark:bg-slate-800/90 rounded-md shadow-sm border border-slate-200 dark:border-slate-700">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                      {Object.keys(priceChartData).map((symbol, idx) => (
+                        selectedSymbols.has(symbol) && (
+                          <div key={symbol} className="flex items-center gap-2">
+                            <div 
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: PORTFOLIO_COLORS[idx % PORTFOLIO_COLORS.length] }}
+                            />
+                            <span className="text-sm font-mono text-slate-700 dark:text-slate-300">
+                              {symbol}: {stockLegendValues[symbol] || '-'}
+                            </span>
+                          </div>
+                        )
+                      ))}
+                    </div>
                   </div>
                 )}
                 <div ref={chartContainerTwo} className="w-full h-[400px]" />
