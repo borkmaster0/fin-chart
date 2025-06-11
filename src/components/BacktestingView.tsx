@@ -582,7 +582,7 @@ const BacktestingView: React.FC = () => {
       },
     });
 
-    const priceChart = createChart(chartContainerTwo.currnet, {
+    const priceChart = createChart(chartContainerTwo.current, {
       layout: {
         background: { type: ColorType.Solid, color: 'transparent' },
         textColor: '#64748B',
