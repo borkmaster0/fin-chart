@@ -1266,7 +1266,7 @@ const BacktestingView: React.FC = () => {
                 </div>
               </div>
 
-              {/* Performance Chart */}
+              {activeChart == 'portfolio' ? ({/* Performance Chart */}
               <div className="card">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold">Performance Comparison</h3>
@@ -1328,7 +1328,9 @@ const BacktestingView: React.FC = () => {
                 </div>
                 
                 <div ref={chartContainerRef} className="w-full h-[400px]" />
-              </div>
+              </div>)}
+
+              
             </div>
           ) : (
             <div className="card">
