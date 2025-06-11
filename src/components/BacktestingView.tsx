@@ -595,7 +595,7 @@ const BacktestingView: React.FC = () => {
       layout: {
         background: { type: ColorType.Solid, color: 'transparent' },
         textColor: '#64748B',
-      },Add commentMore actions
+      },
       width: chartContainerTwo.current.clientWidth,
       height: 400,
       grid: {
@@ -638,7 +638,7 @@ const BacktestingView: React.FC = () => {
     const stockSeriesMap = new Map();
     let idx = 0;
     Object.entries(priceChartData).forEach(([symbol, seriesData]) => {
-      if (selectedSymbols.has(symbol)) {Add commentMore actions
+      if (selectedSymbols.has(symbol)) { 
         const color = PORTFOLIO_COLORS[idx % PORTFOLIO_COLORS.length];
         const lineSeries = priceChart.addSeries(LineSeries, {
           color,
@@ -688,7 +688,7 @@ const BacktestingView: React.FC = () => {
           defaultValues[symbol] = '-';
         });
         setStockLegendValues(defaultValues);
-        return;Add commentMore actions
+        return; 
       }
       const newLegendValues: { [symbol: string]: string } = {};
       Object.keys(priceChartData).forEach((symbol, idx) => {
@@ -734,7 +734,7 @@ const BacktestingView: React.FC = () => {
   // Toggle symbol visibility in price chart
   const toggleSymbolVisibility = (symbol: string) => {
     setSelectedSymbols(prev => {
-      const newSet = new Set(prev);Add commentMore actions
+      const newSet = new Set(prev); 
       if (newSet.has(symbol)) {
         newSet.delete(symbol);
       } else {
