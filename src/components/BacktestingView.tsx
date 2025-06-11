@@ -619,7 +619,6 @@ const BacktestingView: React.FC = () => {
       }
     });
     
-    console.log(seriesMap);
     chart.timeScale().fitContent();
     chartRef.current = chart;
     
