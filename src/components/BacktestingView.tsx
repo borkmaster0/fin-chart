@@ -998,7 +998,7 @@ const BacktestingView: React.FC = () => {
         </div>
 
         {/* Results Panel */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-3">
           {results ? (
             <div className="space-y-6">
               {/* Results Header with Date Range and Return Type */}
