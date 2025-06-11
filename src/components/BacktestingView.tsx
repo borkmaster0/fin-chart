@@ -1266,7 +1266,7 @@ const BacktestingView: React.FC = () => {
                 </div>
               </div>
 
-              {activeChart == 'portfolio' ? (
+              {activeChart === 'portfolio' ? (
               <div className="card">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold">Performance Comparison</h3>
