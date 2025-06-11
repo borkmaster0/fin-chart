@@ -113,6 +113,7 @@ const BacktestingView: React.FC = () => {
   const [expandedPortfolio, setExpandedPortfolio] = useState<string | null>(null);
   const [priceChartData, setPriceChartData] = useState<{ [symbol: string]: { time: number; value: number }[] }>({});
   const [selectedSymbols, setSelectedSymbols] = useState<Set<string>>(new Set());
+  const [activeChart, setActiveChart] = useState<'portfolio' | 'stock'>('portfolio');
   
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartContainerTwo = useRef<HTMLDivElement>(null);
