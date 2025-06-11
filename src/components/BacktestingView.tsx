@@ -109,15 +109,10 @@ const BacktestingView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'summary' | 'withdrawal' | 'rolling' | 'annual'>('summary');
   const [selectedPortfolios, setSelectedPortfolios] = useState<Set<string>>(new Set());
   const [legendValues, setLegendValues] = useState<{ [portfolioId: string]: string }>({});
-  const [stockLegendValues, setStockLegendValues] = useState<{ [symbol: string]: string }>({});
   const [expandedPortfolio, setExpandedPortfolio] = useState<string | null>(null);
-  const [priceChartData, setPriceChartData] = useState<{ [symbol: string]: { time: number; value: number }[] }>({});
-  const [selectedSymbols, setSelectedSymbols] = useState<Set<string>>(new Set());
   
   const chartContainerRef = useRef<HTMLDivElement>(null);
-  const chartContainerTwo = useRef<HTMLDivElement>(null);
   const chartRef = useRef<any>(null);
-  const chartRefTwo = useRef<any>(null);
 
   // Initialize selected portfolios when portfolios change
   useEffect(() => {
@@ -289,15 +284,6 @@ const BacktestingView: React.FC = () => {
         console.error(`Failed to fetch data for ${symbol}:`, error);
       }
     }
-
-    const symbolPriceSeries: { [symbol: string]: { time: number; value: number }[] } = {};
-    Object.entries(data).forEach(([symbol, data]) => {
-      symbolPriceSeries[symbol] = data.timestamps.map((t, i) => ({
-        time: t,
-        value: data.prices[i],
-      }));
-    });
-    setPriceChartData(symbolPriceSeries);
     
     return data;
   };
@@ -518,15 +504,6 @@ const BacktestingView: React.FC = () => {
         actualStartDate: new Date(actualStartDate * 1000).toISOString().split('T')[0],
         actualEndDate: new Date(actualEndDate * 1000).toISOString().split('T')[0]
       });
-
-      const symbolPriceSeries: { [symbol: string]: { time: number; value: number }[] } = {};
-      Object.entries(historicalData).forEach(([symbol, data]) => {
-        symbolPriceSeries[symbol] = data.timestamps.map((t, i) => ({
-          time: t,
-          value: data.prices[i],
-        }));
-      });
-      setPriceChartData(symbolPriceSeries);
       
     } catch (error) {
       console.error('Backtest failed:', error);
@@ -547,28 +524,14 @@ const BacktestingView: React.FC = () => {
     setSelectedPortfolios(newSelected);
   };
 
-  // Initialize selected symbols for price chart when priceChartData changes
-  useEffect(() => {
-    if (priceChartData && Object.keys(priceChartData).length > 0) {
-      setSelectedSymbols(new Set(Object.keys(priceChartData)));
-    }
-  }, [priceChartData]);
-
   // Create performance chart
   useEffect(() => {
     if (!results || !chartContainerRef.current) return;
-    if (!results || !chartContainerTwo.current) return;
 
     // Clean up previous chart
     if (chartRef.current) {
       chartRef.current.remove();
       chartRef.current = null;
-    }
-
-    // Clean up price chart
-    if (chartRefTwo.current) {
-      chartRefTwo.current.remove();
-      chartRefTwo.current = null;
     }
 
     const chart = createChart(chartContainerRef.current, {
@@ -591,26 +554,6 @@ const BacktestingView: React.FC = () => {
       },
     });
 
-    const priceChart = createChart(chartContainerTwo.current, {
-      layout: {
-        background: { type: ColorType.Solid, color: 'transparent' },
-        textColor: '#64748B',
-      },
-      width: chartContainerTwo.current.clientWidth,
-      height: 400,
-      grid: {
-        vertLines: { color: 'rgba(100, 116, 139, 0.1)' },
-        horzLines: { color: 'rgba(100, 116, 139, 0.1)' },
-      },
-      rightPriceScale: {
-        borderColor: '#E2E8F0',
-      },
-      timeScale: {
-        borderColor: '#E2E8F0',
-        timeVisible: false,
-      },
-    })
-
     const seriesMap = new Map();
 
     // Add a line series for each portfolio
@@ -630,27 +573,6 @@ const BacktestingView: React.FC = () => {
 
     chart.timeScale().fitContent();
     chartRef.current = chart;
-
-    // Price Chart
-    chartRefTwo.current = priceChart;
-
-    // Stock price chart legend values
-    const stockSeriesMap = new Map();
-    let idx = 0;
-    Object.entries(priceChartData).forEach(([symbol, seriesData]) => {
-      if (selectedSymbols.has(symbol)) { 
-        const color = PORTFOLIO_COLORS[idx % PORTFOLIO_COLORS.length];
-        const lineSeries = priceChart.addSeries(LineSeries, {
-          color,
-          lineWidth: 2,
-          title: symbol,
-        });
-        lineSeries.setData(seriesData);
-        stockSeriesMap.set(symbol, lineSeries);
-      }
-      idx++;
-    });
-    priceChart.timeScale().fitContent();
 
     // Subscribe to crosshair move for legend updates
     chart.subscribeCrosshairMove(param => {
@@ -680,43 +602,14 @@ const BacktestingView: React.FC = () => {
       setLegendValues(newLegendValues);
     });
 
-    // Subscribe to crosshair move for stock legend updates
-    priceChart.subscribeCrosshairMove(param => {
-      if (!param.time || param.point.x < 0 || param.point.y < 0) {
-        const defaultValues: { [symbol: string]: string } = {};
-        Object.keys(priceChartData).forEach(symbol => {
-          defaultValues[symbol] = '-';
-        });
-        setStockLegendValues(defaultValues);
-        return; 
-      }
-      const newLegendValues: { [symbol: string]: string } = {};
-      Object.keys(priceChartData).forEach((symbol, idx) => {
-        if (selectedSymbols.has(symbol)) {
-          const series = stockSeriesMap.get(symbol);
-          const value = param.seriesData.get(series);
-          if (value && typeof value.value === 'number') {
-            newLegendValues[symbol] = formatCurrency(value.value);
-          } else {
-            newLegendValues[symbol] = '-';
-          }
-        } else {
-          newLegendValues[symbol] = '-';
-        }
-      });
-      setStockLegendValues(newLegendValues);
-    });
-
     // Handle resize
     const resizeObserver = new ResizeObserver(entries => {
       if (entries.length === 0 || !entries[0].contentRect) return;
       const { width } = entries[0].contentRect;
       chart.applyOptions({ width });
-      priceChart.applyOptions({ width });
     });
 
     resizeObserver.observe(chartContainerRef.current);
-    resizeObserver.observe(chartContainerTwo.current);
 
     return () => {
       resizeObserver.disconnect();
@@ -724,25 +617,8 @@ const BacktestingView: React.FC = () => {
         chartRef.current.remove();
         chartRef.current = null;
       }
-      if (chartRefTwo.current) {
-        chartRefTwo.current.remove();
-        chartRefTwo.current = null;
-      }
     };
-  }, [results, selectedPortfolios, priceChartData, selectedSymbols]);
-
-  // Toggle symbol visibility in price chart
-  const toggleSymbolVisibility = (symbol: string) => {
-    setSelectedSymbols(prev => {
-      const newSet = new Set(prev); 
-      if (newSet.has(symbol)) {
-        newSet.delete(symbol);
-      } else {
-        newSet.add(symbol);
-      }
-      return newSet;
-    });
-  };
+  }, [results, selectedPortfolios]);
 
   const formatLargeNumber = (value: number): string => {
     const absValue = Math.abs(value);
