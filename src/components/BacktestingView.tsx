@@ -782,7 +782,7 @@ const BacktestingView: React.FC = () => {
             <div className="flex items-center gap-2 mb-4">
               <Settings className="h-5 w-5 text-primary" />
               <h2 className="text-xl font-semibold">Global Parameters</h2>
-            </div>
+            </div> 
             
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
