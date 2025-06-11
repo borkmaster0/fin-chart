@@ -10,7 +10,9 @@ interface BacktestConfig {
   endDate: string;
   initialValue: number;
   cashflow: number;
-  cashflowFrequency: 'daily' | 'monthly' | 'quarterly' | 'yearly';
+  cashflowFrequency: 'monthly' | 'quarterly' | 'yearly';
+  rebalanceFrequency: 'monthly' | 'quarterly' | 'yearly' | 'never';
+  adjustForInflation: boolean;
   reinvestDividends: boolean; // New option for total return
 }
 
@@ -89,6 +91,8 @@ const BacktestingView: React.FC = () => {
     initialValue: 100000,
     cashflow: 0,
     cashflowFrequency: 'yearly',
+    rebalanceFrequency: 'yearly',
+    adjustForInflation: false,
     reinvestDividends: true // Default to true for total return
   });
 
@@ -109,15 +113,10 @@ const BacktestingView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'summary' | 'withdrawal' | 'rolling' | 'annual'>('summary');
   const [selectedPortfolios, setSelectedPortfolios] = useState<Set<string>>(new Set());
   const [legendValues, setLegendValues] = useState<{ [portfolioId: string]: string }>({});
-  const [stockLegendValues, setStockLegendValues] = useState<{ [symbol: string]: string }>({});
   const [expandedPortfolio, setExpandedPortfolio] = useState<string | null>(null);
-  const [priceChartData, setPriceChartData] = useState<{ [symbol: string]: { time: number; value: number }[] }>({});
-  const [selectedSymbols, setSelectedSymbols] = useState<Set<string>>(new Set());
   
   const chartContainerRef = useRef<HTMLDivElement>(null);
-  const chartContainerTwo = useRef<HTMLDivElement>(null);
   const chartRef = useRef<any>(null);
-  const chartRefTwo = useRef<any>(null);
 
   // Initialize selected portfolios when portfolios change
   useEffect(() => {
@@ -141,7 +140,7 @@ const BacktestingView: React.FC = () => {
     setPortfolios([...portfolios, {
       id: newId,
       name: `Portfolio ${newId}`,
-      allocations: [{ symbol: '', allocation: 100 }]
+      allocations: [{ symbol: 'SPY', allocation: 100 }]
     }]);
   };
 
@@ -174,7 +173,7 @@ const BacktestingView: React.FC = () => {
       if (portfolio.id === portfolioId) {
         return {
           ...portfolio,
-          allocations: [...portfolio.allocations, { symbol: '', allocation: 0 }]
+          allocations: [...portfolio.allocations, { symbol: 'SPY', allocation: 0 }]
         };
       }
       return portfolio;
@@ -289,15 +288,6 @@ const BacktestingView: React.FC = () => {
         console.error(`Failed to fetch data for ${symbol}:`, error);
       }
     }
-
-    const symbolPriceSeries: { [symbol: string]: { time: number; value: number }[] } = {};
-    Object.entries(data).forEach(([symbol, data]) => {
-      symbolPriceSeries[symbol] = data.timestamps.map((t, i) => ({
-        time: t,
-        value: data.prices[i],
-      }));
-    });
-    setPriceChartData(symbolPriceSeries);
     
     return data;
   };
@@ -518,15 +508,6 @@ const BacktestingView: React.FC = () => {
         actualStartDate: new Date(actualStartDate * 1000).toISOString().split('T')[0],
         actualEndDate: new Date(actualEndDate * 1000).toISOString().split('T')[0]
       });
-
-      const symbolPriceSeries: { [symbol: string]: { time: number; value: number }[] } = {};
-      Object.entries(historicalData).forEach(([symbol, data]) => {
-        symbolPriceSeries[symbol] = data.timestamps.map((t, i) => ({
-          time: t,
-          value: data.prices[i],
-        }));
-      });
-      setPriceChartData(symbolPriceSeries);
       
     } catch (error) {
       console.error('Backtest failed:', error);
@@ -547,28 +528,14 @@ const BacktestingView: React.FC = () => {
     setSelectedPortfolios(newSelected);
   };
 
-  // Initialize selected symbols for price chart when priceChartData changes
-  useEffect(() => {
-    if (priceChartData && Object.keys(priceChartData).length > 0) {
-      setSelectedSymbols(new Set(Object.keys(priceChartData)));
-    }
-  }, [priceChartData]);
-
   // Create performance chart
   useEffect(() => {
     if (!results || !chartContainerRef.current) return;
-    if (!results || !chartContainerTwo.current) return;
 
     // Clean up previous chart
     if (chartRef.current) {
       chartRef.current.remove();
       chartRef.current = null;
-    }
-
-    // Clean up price chart
-    if (chartRefTwo.current) {
-      chartRefTwo.current.remove();
-      chartRefTwo.current = null;
     }
 
     const chart = createChart(chartContainerRef.current, {
@@ -591,26 +558,6 @@ const BacktestingView: React.FC = () => {
       },
     });
 
-    const priceChart = createChart(chartContainerTwo.current, {
-      layout: {
-        background: { type: ColorType.Solid, color: 'transparent' },
-        textColor: '#64748B',
-      },
-      width: chartContainerTwo.current.clientWidth,
-      height: 400,
-      grid: {
-        vertLines: { color: 'rgba(100, 116, 139, 0.1)' },
-        horzLines: { color: 'rgba(100, 116, 139, 0.1)' },
-      },
-      rightPriceScale: {
-        borderColor: '#E2E8F0',
-      },
-      timeScale: {
-        borderColor: '#E2E8F0',
-        timeVisible: false,
-      },
-    })
-
     const seriesMap = new Map();
 
     // Add a line series for each portfolio
@@ -627,30 +574,9 @@ const BacktestingView: React.FC = () => {
         seriesMap.set(portfolioResult.portfolioId, lineSeries);
       }
     });
-    
+
     chart.timeScale().fitContent();
     chartRef.current = chart;
-    
-    // Price Chart
-    chartRefTwo.current = priceChart;
-
-    // Stock price chart legend values
-    const stockSeriesMap = new Map();
-    let idx = 0;
-    Object.entries(priceChartData).forEach(([symbol, seriesData]) => {
-      if (selectedSymbols.has(symbol)) {
-        const color = PORTFOLIO_COLORS[idx % PORTFOLIO_COLORS.length];
-        const lineSeries = priceChart.addSeries(LineSeries, {
-          color,
-          lineWidth: 2,
-          title: symbol,
-        });
-        lineSeries.setData(seriesData);
-        stockSeriesMap.set(symbol, lineSeries);
-      }
-      idx++;
-    });
-    priceChart.timeScale().fitContent();
 
     // Subscribe to crosshair move for legend updates
     chart.subscribeCrosshairMove(param => {
@@ -680,43 +606,14 @@ const BacktestingView: React.FC = () => {
       setLegendValues(newLegendValues);
     });
 
-    // Subscribe to crosshair move for stock legend updates
-    priceChart.subscribeCrosshairMove(param => {
-      if (!param.time || param.point.x < 0 || param.point.y < 0) {
-        const defaultValues: { [symbol: string]: string } = {};
-        Object.keys(priceChartData).forEach(symbol => {
-          defaultValues[symbol] = '-';
-        });
-        setStockLegendValues(defaultValues);
-        return;
-      }
-      const newLegendValues: { [symbol: string]: string } = {};
-      Object.keys(priceChartData).forEach((symbol, idx) => {
-        if (selectedSymbols.has(symbol)) {
-          const series = stockSeriesMap.get(symbol);
-          const value = param.seriesData.get(series);
-          if (value && typeof value.value === 'number') {
-            newLegendValues[symbol] = formatCurrency(value.value);
-          } else {
-            newLegendValues[symbol] = '-';
-          }
-        } else {
-          newLegendValues[symbol] = '-';
-        }
-      });
-      setStockLegendValues(newLegendValues);
-    });
-
     // Handle resize
     const resizeObserver = new ResizeObserver(entries => {
       if (entries.length === 0 || !entries[0].contentRect) return;
       const { width } = entries[0].contentRect;
       chart.applyOptions({ width });
-      priceChart.applyOptions({ width });
     });
 
     resizeObserver.observe(chartContainerRef.current);
-    resizeObserver.observe(chartContainerTwo.current);
 
     return () => {
       resizeObserver.disconnect();
@@ -724,25 +621,8 @@ const BacktestingView: React.FC = () => {
         chartRef.current.remove();
         chartRef.current = null;
       }
-      if (chartRefTwo.current) {
-        chartRefTwo.current.remove();
-        chartRefTwo.current = null;
-      }
     };
-  }, [results, selectedPortfolios, priceChartData, selectedSymbols]);
-
-  // Toggle symbol visibility in price chart
-  const toggleSymbolVisibility = (symbol: string) => {
-    setSelectedSymbols(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(symbol)) {
-        newSet.delete(symbol);
-      } else {
-        newSet.add(symbol);
-      }
-      return newSet;
-    });
-  };
+  }, [results, selectedPortfolios]);
 
   const formatLargeNumber = (value: number): string => {
     const absValue = Math.abs(value);
@@ -762,51 +642,51 @@ const BacktestingView: React.FC = () => {
   };
 
   return (
-    <div className="max-w-full mx-auto">
+    <div className="max-w-7xl mx-auto space-y-6">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-4">
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-3">
-            <TrendingUp className="h-8 w-8 text-primary" />
-            Backtesting
-          </h1>
+          <TrendingUp className="h-8 w-8 text-primary" />
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Backtesting</h1>
         </div>
-        <p className="text-slate-600 dark:text-slate-400">
+        <p className="text-slate-600 dark:text-slate-400 text-lg">
           Test your trading strategies against historical data to evaluate performance
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* Configuration Panel */}
-        <div className="lg:col-span-1 space-y-6">
+        <div className="xl:col-span-1 space-y-6">
           {/* Global Parameters */}
           <div className="card">
-            <div className="flex items-center gap-3 mb-6">
+            <div className="flex items-center gap-2 mb-4">
               <Settings className="h-5 w-5 text-primary" />
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white">Global Parameters</h2>
-            </div> 
+              <h2 className="text-xl font-semibold">Global Parameters</h2>
+            </div>
             
             <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Start Date</label>
+                  <label className="block text-sm font-medium mb-1">Start Date</label>
                   <input
                     type="date"
                     value={config.startDate}
                     onChange={(e) => setConfig({ ...config, startDate: e.target.value })}
                     className="input w-full"
+                    placeholder="Auto (latest start)"
                   />
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                     Leave blank for when all tickers have data
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">End Date</label>
+                  <label className="block text-sm font-medium mb-1">End Date</label>
                   <input
                     type="date"
                     value={config.endDate}
                     onChange={(e) => setConfig({ ...config, endDate: e.target.value })}
                     className="input w-full"
+                    placeholder="Auto (earliest end)"
                   />
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                     Leave blank for when all tickers still have data
@@ -814,7 +694,7 @@ const BacktestingView: React.FC = () => {
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">Starting Value</label>
                   <div className="relative">
@@ -853,6 +733,31 @@ const BacktestingView: React.FC = () => {
                   <option value="yearly">Yearly</option>
                 </select>
               </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">Rebalance Frequency</label>
+                <select
+                  value={config.rebalanceFrequency}
+                  onChange={(e) => setConfig({ ...config, rebalanceFrequency: e.target.value as any })}
+                  className="input w-full"
+                >
+                  <option value="never">Never</option>
+                  <option value="monthly">Monthly</option>
+                  <option value="quarterly">Quarterly</option>
+                  <option value="yearly">Yearly</option>
+                </select>
+              </div>
+              
+              <div className="space-y-3">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={config.adjustForInflation}
+                    onChange={(e) => setConfig({ ...config, adjustForInflation: e.target.checked })}
+                    className="form-checkbox h-4 w-4 text-primary rounded"
+                  />
+                  <span className="text-sm">Adjust for inflation</span>
+                </label>
                 
                 <label className="flex items-center gap-2">
                   <input
@@ -983,10 +888,10 @@ const BacktestingView: React.FC = () => {
           {/* Fetch Progress */}
           {isBacktesting && fetchProgress.total > 0 && (
             <div className="card">
-              <div className="text-sm text-slate-600 dark:text-slate-400 mb-1">
+              <div className="text-sm text-slate-600 dark:text-slate-400 mb-2">
                 Fetching data: {fetchProgress.current} of {fetchProgress.total}
               </div>
-              <div className="text-sm font-medium mb-1">{fetchProgress.symbol}</div>
+              <div className="text-sm font-medium mb-2">{fetchProgress.symbol}</div>
               <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
                 <div 
                   className="bg-primary h-2 rounded-full transition-all duration-300"
@@ -998,7 +903,7 @@ const BacktestingView: React.FC = () => {
         </div>
 
         {/* Results Panel */}
-        <div className="lg:col-span-2">
+        <div className="xl:col-span-2">
           {results ? (
             <div className="space-y-6">
               {/* Results Header with Date Range and Return Type */}
@@ -1303,66 +1208,6 @@ const BacktestingView: React.FC = () => {
                 
                 <div ref={chartContainerRef} className="w-full h-[400px]" />
               </div>
-              <div className="card">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold">Stock Comparison</h3>
-                  <div className="flex items-center gap-4 text-sm">
-                    <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
-                      <Calendar className="h-4 w-4" />
-                      <span>
-                        {results.actualStartDate} - {results.actualEndDate}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                {}
-                {/* Stock Toggle Controls */}
-                {priceChartData && Object.keys(priceChartData).length > 0 && (
-                  <div className="mb-4 flex flex-wrap gap-2">
-                    {Object.keys(priceChartData).map((symbol, idx) => (
-                      <button
-                        key={symbol}
-                        onClick={() => toggleSymbolVisibility(symbol)}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors
-                          ${selectedSymbols.has(symbol)
-                            ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white'
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                        }`}
-                        style={{ minWidth: 80 }}
-                        aria-pressed={selectedSymbols.has(symbol)}
-                      >
-                        <div 
-                          className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: PORTFOLIO_COLORS[idx % PORTFOLIO_COLORS.length] }}
-                        />
-                        {symbol}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {/* Stock Chart Legend */}
-                {priceChartData && Object.keys(priceChartData).length > 0 && (
-                  <div className="mb-3 p-3 bg-white/90 dark:bg-slate-800/90 rounded-md shadow-sm border border-slate-200 dark:border-slate-700">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                      {Object.keys(priceChartData).map((symbol, idx) => (
-                        selectedSymbols.has(symbol) && (
-                          <div key={symbol} className="flex items-center gap-2">
-                            <div 
-                              className="w-3 h-3 rounded-full"
-                              style={{ backgroundColor: PORTFOLIO_COLORS[idx % PORTFOLIO_COLORS.length] }}
-                            />
-                            <span className="text-sm font-mono text-slate-700 dark:text-slate-300">
-                              {symbol}: {stockLegendValues[symbol] || '-'}
-                            </span>
-                          </div>
-                        )
-                      ))}
-                    </div>
-                  </div>
-                )}
-                <div ref={chartContainerTwo} className="h-[400px]" />
-              </div>
-              
             </div>
           ) : (
             <div className="card">
@@ -1381,6 +1226,7 @@ const BacktestingView: React.FC = () => {
           )}
         </div>
       </div>
+    </div>
   );
 };
 
