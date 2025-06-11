@@ -110,6 +110,7 @@ const BacktestingView: React.FC = () => {
   const [selectedPortfolios, setSelectedPortfolios] = useState<Set<string>>(new Set());
   const [legendValues, setLegendValues] = useState<{ [portfolioId: string]: string }>({});
   const [expandedPortfolio, setExpandedPortfolio] = useState<string | null>(null);
+  const [priceChartData, setPriceChartData] = useState<{ [symbol: string]: { time: number; value: number }[] }>({});
   
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartContainerTwo = useRef<HTMLDivElement>(null);
@@ -286,6 +287,15 @@ const BacktestingView: React.FC = () => {
         console.error(`Failed to fetch data for ${symbol}:`, error);
       }
     }
+
+    const symbolPriceSeries: { [symbol: string]: { time: number; value: number }[] } = {};
+    Object.entries(data).forEach(([symbol, data]) => {
+      symbolPriceSeries[symbol] = data.timestamps.map((t, i) => ({
+        time: t,
+        value: data.prices[i],
+      }));
+    });
+    setPriceChartData(symbolPriceSeries);
     
     return data;
   };
@@ -506,6 +516,15 @@ const BacktestingView: React.FC = () => {
         actualStartDate: new Date(actualStartDate * 1000).toISOString().split('T')[0],
         actualEndDate: new Date(actualEndDate * 1000).toISOString().split('T')[0]
       });
+
+      const symbolPriceSeries: { [symbol: string]: { time: number; value: number }[] } = {};
+      Object.entries(historicalData).forEach(([symbol, data]) => {
+        symbolPriceSeries[symbol] = data.timestamps.map((t, i) => ({
+          time: t,
+          value: data.prices[i],
+        }));
+      });
+      setPriceChartData(symbolPriceSeries);
       
     } catch (error) {
       console.error('Backtest failed:', error);
@@ -606,6 +625,19 @@ const BacktestingView: React.FC = () => {
     
     // Price Chart
     chartRefTwo.current = priceChart;
+
+    if (priceChart && priceChartData) {
+      Object.entries(priceChartData).forEach(([symbol, seriesData], idx) => {
+        const color = PORTFOLIO_COLORS[idx % PORTFOLIO_COLORS.length];
+        const lineSeries = priceChart.addSeries(LineSeries, {
+          color,
+          lineWidth: 2,
+          title: symbol,
+        });
+        lineSeries.setData(seriesData);
+      });
+      priceChart.timeScale().fitContent();
+    }
 
     // Subscribe to crosshair move for legend updates
     chart.subscribeCrosshairMove(param => {
