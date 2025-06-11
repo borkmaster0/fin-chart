@@ -872,7 +872,7 @@ const BacktestingView: React.FC = () => {
                 </div>
               </div>
             </div>
-        </div>
+          </div>
 
           {/* Portfolios */}
           <div className="card">
