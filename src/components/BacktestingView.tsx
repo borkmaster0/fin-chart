@@ -762,51 +762,51 @@ const BacktestingView: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="max-w-full mx-auto">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-4">
-          <TrendingUp className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Backtesting</h1>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-3">
+            <TrendingUp className="h-8 w-8 text-primary" />
+            Backtesting
+          </h1>
         </div>
-        <p className="text-slate-600 dark:text-slate-400 text-lg">
+        <p className="text-slate-600 dark:text-slate-400">
           Test your trading strategies against historical data to evaluate performance
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Configuration Panel */}
         <div className="lg:col-span-1 space-y-6">
           {/* Global Parameters */}
           <div className="card">
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center gap-3 mb-6">
               <Settings className="h-5 w-5 text-primary" />
-              <h2 className="text-xl font-semibold">Global Parameters</h2>
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white">Global Parameters</h2>
             </div> 
             
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Start Date</label>
+                  <label className="block text-sm font-medium mb-2">Start Date</label>
                   <input
                     type="date"
                     value={config.startDate}
                     onChange={(e) => setConfig({ ...config, startDate: e.target.value })}
                     className="input w-full"
-                    placeholder="Auto (latest start)"
                   />
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                     Leave blank for when all tickers have data
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">End Date</label>
+                  <label className="block text-sm font-medium mb-2">End Date</label>
                   <input
                     type="date"
                     value={config.endDate}
                     onChange={(e) => setConfig({ ...config, endDate: e.target.value })}
                     className="input w-full"
-                    placeholder="Auto (earliest end)"
                   />
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                     Leave blank for when all tickers still have data
@@ -814,7 +814,7 @@ const BacktestingView: React.FC = () => {
                 </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">Starting Value</label>
                   <div className="relative">
@@ -983,10 +983,10 @@ const BacktestingView: React.FC = () => {
           {/* Fetch Progress */}
           {isBacktesting && fetchProgress.total > 0 && (
             <div className="card">
-              <div className="text-sm text-slate-600 dark:text-slate-400 mb-2">
+              <div className="text-sm text-slate-600 dark:text-slate-400 mb-1">
                 Fetching data: {fetchProgress.current} of {fetchProgress.total}
               </div>
-              <div className="text-sm font-medium mb-2">{fetchProgress.symbol}</div>
+              <div className="text-sm font-medium mb-1">{fetchProgress.symbol}</div>
               <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
                 <div 
                   className="bg-primary h-2 rounded-full transition-all duration-300"
