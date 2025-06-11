@@ -292,7 +292,7 @@ const BacktestingView: React.FC = () => {
 
     const symbolPriceSeries: { [symbol: string]: { time: number; value: number }[] } = {};
     Object.entries(data).forEach(([symbol, data]) => {
-      symbolPriceSeries[symbol] = data.timestamps.map((t, i) => ({Add commentMore actions
+      symbolPriceSeries[symbol] = data.timestamps.map((t, i) => ({
         time: t,
         value: data.prices[i],
       }));
