@@ -1366,7 +1366,6 @@ const BacktestingView: React.FC = () => {
                       )
                     ))}
                   </div>
-                </div>
                 <div ref={chartContainerTwo} className="h-[400px]" />
               </div>)}
             </div>
