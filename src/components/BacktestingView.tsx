@@ -776,100 +776,98 @@ const BacktestingView: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Configuration Panel */}
-        <div className="lg:col-span-1">
-          <div className="card flex flex-col gap-6">
-            {/* Global Parameters */}
-            <div className="card">
-              <div className="flex items-center gap-2 mb-4">
-                <Settings className="h-5 w-5 text-primary" />
-                <h2 className="text-xl font-semibold">Global Parameters</h2>
+        <div className="lg:col-span-1 space-y-6">
+          {/* Global Parameters */}
+          <div className="card">
+            <div className="flex items-center gap-2 mb-4">
+              <Settings className="h-5 w-5 text-primary" />
+              <h2 className="text-xl font-semibold">Global Parameters</h2>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Start Date</label>
+                  <input
+                    type="date"
+                    value={config.startDate}
+                    onChange={(e) => setConfig({ ...config, startDate: e.target.value })}
+                    className="input w-full"
+                    placeholder="Auto (latest start)"
+                  />
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    Leave blank for when all tickers have data
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">End Date</label>
+                  <input
+                    type="date"
+                    value={config.endDate}
+                    onChange={(e) => setConfig({ ...config, endDate: e.target.value })}
+                    className="input w-full"
+                    placeholder="Auto (earliest end)"
+                  />
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    Leave blank for when all tickers still have data
+                  </p>
+                </div>
               </div>
               
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Start Date</label>
-                    <input
-                      type="date"
-                      value={config.startDate}
-                      onChange={(e) => setConfig({ ...config, startDate: e.target.value })}
-                      className="input w-full"
-                      placeholder="Auto (latest start)"
-                    />
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                      Leave blank for when all tickers have data
-                    </p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">End Date</label>
-                    <input
-                      type="date"
-                      value={config.endDate}
-                      onChange={(e) => setConfig({ ...config, endDate: e.target.value })}
-                      className="input w-full"
-                      placeholder="Auto (earliest end)"
-                    />
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                      Leave blank for when all tickers still have data
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Starting Value</label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500">$</span>
-                      <input
-                        type="number"
-                        value={config.initialValue}
-                        onChange={(e) => setConfig({ ...config, initialValue: Number(e.target.value) })}
-                        className="input w-full pl-8"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Cashflow</label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500">$</span>
-                      <input
-                        type="number"
-                        value={config.cashflow}
-                        onChange={(e) => setConfig({ ...config, cashflow: Number(e.target.value) })}
-                        className="input w-full pl-8"
-                      />
-                    </div>
-                  </div>
-                </div>
-                
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Cashflow Frequency</label>
-                  <select
-                    value={config.cashflowFrequency}
-                    onChange={(e) => setConfig({ ...config, cashflowFrequency: e.target.value as any })}
-                    className="input w-full"
-                  >
-                    <option value="monthly">Monthly</option>
-                    <option value="quarterly">Quarterly</option>
-                    <option value="yearly">Yearly</option>
-                  </select>
-                </div>
-                  
-                  <label className="flex items-center gap-2">
+                  <label className="block text-sm font-medium mb-1">Starting Value</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500">$</span>
                     <input
-                      type="checkbox"
-                      checked={config.reinvestDividends}
-                      onChange={(e) => setConfig({ ...config, reinvestDividends: e.target.checked })}
-                      className="form-checkbox h-4 w-4 text-primary rounded"
+                      type="number"
+                      value={config.initialValue}
+                      onChange={(e) => setConfig({ ...config, initialValue: Number(e.target.value) })}
+                      className="input w-full pl-8"
                     />
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium">Reinvest dividends (Total Return)</span>
-                      <span className="text-xs text-slate-500 dark:text-slate-400">
-                        Include dividend reinvestment for total return calculation
-                      </span>
-                    </div>
-                  </label>
+                  </div>
                 </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Cashflow</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500">$</span>
+                    <input
+                      type="number"
+                      value={config.cashflow}
+                      onChange={(e) => setConfig({ ...config, cashflow: Number(e.target.value) })}
+                      className="input w-full pl-8"
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">Cashflow Frequency</label>
+                <select
+                  value={config.cashflowFrequency}
+                  onChange={(e) => setConfig({ ...config, cashflowFrequency: e.target.value as any })}
+                  className="input w-full"
+                >
+                  <option value="monthly">Monthly</option>
+                  <option value="quarterly">Quarterly</option>
+                  <option value="yearly">Yearly</option>
+                </select>
+              </div>
+                
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={config.reinvestDividends}
+                    onChange={(e) => setConfig({ ...config, reinvestDividends: e.target.checked })}
+                    className="form-checkbox h-4 w-4 text-primary rounded"
+                  />
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium">Reinvest dividends (Total Return)</span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
+                      Include dividend reinvestment for total return calculation
+                    </span>
+                  </div>
+                </label>
               </div>
             </div>
           </div>
