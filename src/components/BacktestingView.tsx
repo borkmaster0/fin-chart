@@ -1328,28 +1328,30 @@ const BacktestingView: React.FC = () => {
                 </div>
                 
                 <div ref={chartContainerRef} className="w-full h-[400px]" />
-              </div>) : (
-              <div className="mb-4 flex flex-wrap gap-2">
-                {Object.keys(priceChartData).map((symbol, idx) => (
-                  <button
-                    key={symbol}
-                    onClick={() => toggleSymbolVisibility(symbol)}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors
-                      ${selectedSymbols.has(symbol)
-                        ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                    }`}
-                    style={{ minWidth: 80 }}
-                    aria-pressed={selectedSymbols.has(symbol)}
-                  >
-                    <div 
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: PORTFOLIO_COLORS[idx % PORTFOLIO_COLORS.length] }}
-                    />
-                    {symbol}
-                  </button>
-                ))}
               </div>
+            ) : (
+              <div>
+                <div className="mb-4 flex flex-wrap gap-2">
+                  {Object.keys(priceChartData).map((symbol, idx) => (
+                    <button
+                      key={symbol}
+                      onClick={() => toggleSymbolVisibility(symbol)}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors
+                        ${selectedSymbols.has(symbol)
+                          ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                      }`}
+                      style={{ minWidth: 80 }}
+                      aria-pressed={selectedSymbols.has(symbol)}
+                    >
+                      <div 
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: PORTFOLIO_COLORS[idx % PORTFOLIO_COLORS.length] }}
+                      />
+                      {symbol}
+                    </button>
+                  ))}
+                </div>
                 <div className="mb-3 p-3 bg-white/90 dark:bg-slate-800/90 rounded-md shadow-sm border border-slate-200 dark:border-slate-700">
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                     {Object.keys(priceChartData).map((symbol, idx) => (
@@ -1366,7 +1368,8 @@ const BacktestingView: React.FC = () => {
                       )
                     ))}
                   </div>
-                <div ref={chartContainerTwo} className="h-[400px]" />
+                  <div ref={chartContainerTwo} className="h-[400px]" />
+                </div>
               </div>
             )}
             </div>
