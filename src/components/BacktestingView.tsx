@@ -855,31 +855,7 @@ const BacktestingView: React.FC = () => {
                 </select>
               </div>
               
-              <div>
-                <label className="block text-sm font-medium mb-1">Rebalance Frequency</label>
-                <select
-                  value={config.rebalanceFrequency}
-                  onChange={(e) => setConfig({ ...config, rebalanceFrequency: e.target.value as any })}
-                  className="input w-full"
-                >
-                  <option value="never">Never</option>
-                  <option value="monthly">Monthly</option>
-                  <option value="quarterly">Quarterly</option>
-                  <option value="yearly">Yearly</option>
-                </select>
-              </div>
-              
               <div className="space-y-3">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={config.adjustForInflation}
-                    onChange={(e) => setConfig({ ...config, adjustForInflation: e.target.checked })}
-                    className="form-checkbox h-4 w-4 text-primary rounded"
-                  />
-                  <span className="text-sm">Adjust for inflation</span>
-                </label>
-                
                 <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
