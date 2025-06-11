@@ -111,6 +111,7 @@ const BacktestingView: React.FC = () => {
   const [legendValues, setLegendValues] = useState<{ [portfolioId: string]: string }>({});
   const [expandedPortfolio, setExpandedPortfolio] = useState<string | null>(null);
   const [priceChartData, setPriceChartData] = useState<{ [symbol: string]: { time: number; value: number }[] }>({});
+  const [selectedSymbols, setSelectedSymbols] = useState<Set<string>>(new Set());
   
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartContainerTwo = useRef<HTMLDivElement>(null);
@@ -545,6 +546,13 @@ const BacktestingView: React.FC = () => {
     setSelectedPortfolios(newSelected);
   };
 
+  // Initialize selected symbols for price chart when priceChartData changes
+  useEffect(() => {
+    if (priceChartData && Object.keys(priceChartData).length > 0) {
+      setSelectedSymbols(new Set(Object.keys(priceChartData)));
+    }
+  }, [priceChartData]);
+
   // Create performance chart
   useEffect(() => {
     if (!results || !chartContainerRef.current) return;
@@ -626,14 +634,18 @@ const BacktestingView: React.FC = () => {
     chartRefTwo.current = priceChart;
 
     if (priceChart && priceChartData) {
-      Object.entries(priceChartData).forEach(([symbol, seriesData], idx) => {
-        const color = PORTFOLIO_COLORS[idx % PORTFOLIO_COLORS.length];
-        const lineSeries = priceChart.addSeries(LineSeries, {
-          color,
-          lineWidth: 2,
-          title: symbol,
-        });
-        lineSeries.setData(seriesData);
+      let idx = 0;
+      Object.entries(priceChartData).forEach(([symbol, seriesData]) => {
+        if (selectedSymbols.has(symbol)) {
+          const color = PORTFOLIO_COLORS[idx % PORTFOLIO_COLORS.length];
+          const lineSeries = priceChart.addSeries(LineSeries, {
+            color,
+            lineWidth: 2,
+            title: symbol,
+          });
+          lineSeries.setData(seriesData);
+        }
+        idx++;
       });
       priceChart.timeScale().fitContent();
     }
@@ -688,7 +700,20 @@ const BacktestingView: React.FC = () => {
         chartRefTwo.current = null;
       }
     };
-  }, [results, selectedPortfolios]);
+  }, [results, selectedPortfolios, priceChartData, selectedSymbols]);
+
+  // Toggle symbol visibility in price chart
+  const toggleSymbolVisibility = (symbol: string) => {
+    setSelectedSymbols(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(symbol)) {
+        newSet.delete(symbol);
+      } else {
+        newSet.add(symbol);
+      }
+      return newSet;
+    });
+  };
 
   const formatLargeNumber = (value: number): string => {
     const absValue = Math.abs(value);
@@ -1248,6 +1273,30 @@ const BacktestingView: React.FC = () => {
                 </div>
                 
                 <div ref={chartContainerRef} className="w-full h-[400px]" />
+                {/* Stock Toggle Controls */}
+                {priceChartData && Object.keys(priceChartData).length > 0 && (
+                  <div className="mb-4 flex flex-wrap gap-2 justify-center">
+                    {Object.keys(priceChartData).map((symbol, idx) => (
+                      <button
+                        key={symbol}
+                        onClick={() => toggleSymbolVisibility(symbol)}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors border shadow-sm
+                          ${selectedSymbols.has(symbol)
+                            ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
+                        }`}
+                        style={{ minWidth: 80 }}
+                        aria-pressed={selectedSymbols.has(symbol)}
+                      >
+                        <div 
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: PORTFOLIO_COLORS[idx % PORTFOLIO_COLORS.length] }}
+                        />
+                        {symbol}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <div ref={chartContainerTwo} className="w-full h-[400px]" />
               </div>
             </div>
