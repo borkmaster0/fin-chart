@@ -1302,6 +1302,20 @@ const BacktestingView: React.FC = () => {
                 </div>
                 
                 <div ref={chartContainerRef} className="w-full h-[400px]" />
+              </div>
+              <div className="card">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold">Stock Comparison</h3>
+                  <div className="flex items-center gap-4 text-sm">
+                    <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+                      <Calendar className="h-4 w-4" />
+                      <span>
+                        {results.actualStartDate} - {results.actualEndDate}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                {}
                 {/* Stock Toggle Controls */}
                 {priceChartData && Object.keys(priceChartData).length > 0 && (
                   <div className="mb-4 flex flex-wrap gap-2">
@@ -1347,6 +1361,7 @@ const BacktestingView: React.FC = () => {
                   </div>
                 )}
                 <div ref={chartContainerTwo} className="w-full h-[400px]" />
+                {}
               </div>
             </div>
           ) : (
