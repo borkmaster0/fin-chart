@@ -550,7 +550,7 @@ const BacktestingView: React.FC = () => {
   // Initialize selected symbols for price chart when priceChartData changes
   useEffect(() => {
     if (priceChartData && Object.keys(priceChartData).length > 0) {
-      setSelectedSymbols(new Set(Object.keys(priceChartData)));Add commentMore actions
+      setSelectedSymbols(new Set(Object.keys(priceChartData)));
     }
   }, [priceChartData]);
 
