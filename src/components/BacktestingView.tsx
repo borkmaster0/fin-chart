@@ -1304,15 +1304,15 @@ const BacktestingView: React.FC = () => {
                 <div ref={chartContainerRef} className="w-full h-[400px]" />
                 {/* Stock Toggle Controls */}
                 {priceChartData && Object.keys(priceChartData).length > 0 && (
-                  <div className="mb-4 flex flex-wrap gap-2 justify-center">
+                  <div className="mb-4 flex flex-wrap gap-2">
                     {Object.keys(priceChartData).map((symbol, idx) => (
                       <button
                         key={symbol}
                         onClick={() => toggleSymbolVisibility(symbol)}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors border shadow-sm
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors
                           ${selectedSymbols.has(symbol)
-                            ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700'
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
+                            ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                         }`}
                         style={{ minWidth: 80 }}
                         aria-pressed={selectedSymbols.has(symbol)}
