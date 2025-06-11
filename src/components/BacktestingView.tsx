@@ -1350,32 +1350,25 @@ const BacktestingView: React.FC = () => {
                       </button>
                     ))}
                   </div>
-                )}
-                {/* Stock Chart Legend */}
-                {priceChartData && Object.keys(priceChartData).length > 0 && (
-                  <div className="mb-3 p-3 bg-white/90 dark:bg-slate-800/90 rounded-md shadow-sm border border-slate-200 dark:border-slate-700">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                      {Object.keys(priceChartData).map((symbol, idx) => (
-                        selectedSymbols.has(symbol) && (
-                          <div key={symbol} className="flex items-center gap-2">
-                            <div 
-                              className="w-3 h-3 rounded-full"
-                              style={{ backgroundColor: PORTFOLIO_COLORS[idx % PORTFOLIO_COLORS.length] }}
-                            />
-                            <span className="text-sm font-mono text-slate-700 dark:text-slate-300">
-                              {symbol}: {stockLegendValues[symbol] || '-'}
-                            </span>
-                          </div>
-                        )
-                      ))}
-                    </div>
+                <div className="mb-3 p-3 bg-white/90 dark:bg-slate-800/90 rounded-md shadow-sm border border-slate-200 dark:border-slate-700">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                    {Object.keys(priceChartData).map((symbol, idx) => (
+                      selectedSymbols.has(symbol) && (
+                        <div key={symbol} className="flex items-center gap-2">
+                          <div 
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: PORTFOLIO_COLORS[idx % PORTFOLIO_COLORS.length] }}
+                          />
+                          <span className="text-sm font-mono text-slate-700 dark:text-slate-300">
+                            {symbol}: {stockLegendValues[symbol] || '-'}
+                          </span>
+                        </div>
+                      )
+                    ))}
                   </div>
-                )}
+                </div>
                 <div ref={chartContainerTwo} className="h-[400px]" />
-              </div>
-              )}
-
-              
+              </div>)}
             </div>
           ) : (
             <div className="card">
