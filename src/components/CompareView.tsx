@@ -95,13 +95,13 @@ async function computeOHLCExpression(
 // === Chart Rendering ===
 interface CandlestickChartProps {
   data: CandlestickData[];
+  precision: number;
 }
 
-const CandlestickChart: React.FC<CandlestickChartProps> = ({ data }) => {
+const CandlestickChart: React.FC<CandlestickChartProps> = ({ data, precision }) => {
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<ReturnType<typeof createChart> | null>(null);
   const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
-  const [precision, setPrecision] = useState(5);
 
   useEffect(() => {
     if (!chartRef.current) return;
@@ -162,7 +162,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data }) => {
       resizeObserver.disconnect();
       chart.remove();
     };
-  }, [precision]);
+  }, []);
 
   useEffect(() => {
     if (seriesRef.current) {
