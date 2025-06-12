@@ -57,6 +57,7 @@ async function computeOHLCExpression(
 ): Promise<CandlestickData[]> {
   const symbols = extractSymbols(expression);
   const dataMap = await fetchWithDelay(symbols, timeframe, fetchChartData);
+  console.log(dataMap);
 
   // 1. Convert timestamps into Sets for quick lookup
   const symbolTimestamps: Record<string, Set<number>> = {};
@@ -82,6 +83,7 @@ async function computeOHLCExpression(
   
   const timestampSets = symbols.map(sym => new Set(dataMap[sym].timestamp));
   const alignedTimestamps = intersectSets(timestampSets);
+  console.log(alignedTimestamps);
 
   const result: CandlestickData[] = [];
 
@@ -115,6 +117,8 @@ async function computeOHLCExpression(
         break;
       }
 
+      console.log(d, open, high, low, close);
+
       scope[safeVarName(symbol, 'open')] = open;
       scope[safeVarName(symbol, 'high')] = high;
       scope[safeVarName(symbol, 'low')] = low;
@@ -134,7 +138,6 @@ async function computeOHLCExpression(
         low: evaluate(cleanExpr('low'), scope),
         close: evaluate(cleanExpr('close'), scope),
       });
-      skip = false
     } catch (err) {
       console.warn(`Error evaluating expression at time ${time}:`, err);
     }
