@@ -26,6 +26,10 @@ function extractSymbols(expression: string): string[] {
   return matches ? [...new Set(matches.map(m => m.slice(1, -1)))] : [];
 }
 
+function safeVarName(symbol: string, field: string): string {
+  return `${symbol.replace(/[^a-zA-Z0-9]/g, '_')}_${field}`;
+}
+
 async function fetchWithDelay(
   symbols: string[],
   timeframe: string,
@@ -64,14 +68,15 @@ async function computeOHLCExpression(
     try {
       // Evaluate each price field independently
       for (const symbol of symbols) {
-        scope[`${symbol}_close`] = dataMap[symbol].close[i];
-        scope[`${symbol}_open`] = dataMap[symbol].open[i];
-        scope[`${symbol}_high`] = dataMap[symbol].high[i];
-        scope[`${symbol}_low`] = dataMap[symbol].low[i];
+        scope[safeVarName(symbol, 'close')] = dataMap[symbol].close[i];
+        scope[safeVarName(symbol, 'open')] = dataMap[symbol].open[i];
+        scope[safeVarName(symbol, 'high')] = dataMap[symbol].high[i];
+        scope[safeVarName(symbol, 'low')] = dataMap[symbol].low[i];
       }
-
+      
+      // Replace [SYMBOL] with safe variable names
       const cleanExpr = (type: 'close' | 'open' | 'high' | 'low') =>
-        expression.replace(/\[([^\]]+)]/g, (_, sym) => `${sym}_${type}`);
+        expression.replace(/\[([^\]]+)]/g, (_, s) => safeVarName(s, type));
 
       const close = evaluate(cleanExpr('close'), scope);
       const open = evaluate(cleanExpr('open'), scope);
