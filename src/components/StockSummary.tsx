@@ -80,7 +80,7 @@ const StockSummary: React.FC<StockSummaryProps> = ({ data, isLoading }) => {
         </div>
         <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-700">
           <span className="text-slate-600 dark:text-slate-400">Open</span>
-          <span className="font-medium">{(previousOpen || 0)}</span>
+          <span className="font-medium">{(previousOpen.toFixed(2))}</span>
         </div>
         <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-700">
           <span className="text-slate-600 dark:text-slate-400">Day Range</span>
