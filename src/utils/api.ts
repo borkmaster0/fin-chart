@@ -19,7 +19,7 @@ export async function fetchTipRanksData(symbol: string): Promise<ChartData> {
 
     const data = await response.json();
     return {
-      data.map((item)=>(new Date(item.date).getTime())),
+      timestamps: data.map((item)=>(new Date(item.date).getTime())),
       close: data.map((item)=>(item.close)),
       open: data.map((item)=>(item.open)),
       high: data.map((item)=>(item.high)),
