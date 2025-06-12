@@ -226,7 +226,7 @@ const ChartExpressionApp: React.FC = () => {
           onChange={(e) => setPrecision(Number(e.target.value))}
           className="text-sm border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 bg-white dark:bg-slate-800"
         >
-          {Array.from({ length: 6 }, (_, i) => i).map((p) => (
+          {Array.from({ length: 10 }, (_, i) => i).map((p) => (
             <option key={p} value={p}>
               {p === 0 ? 'No decimals' : `${p} decimal${p > 1 ? 's' : ''}`}
             </option>
