@@ -32,19 +32,3 @@ function formatDate(timestamp: number, timezoneOffset: number = 0): string {
   return format(date, 'PP'); // Format: Mar 15, 2022
 }
 
-function formatLargeNumber(value: number): string {
-  const absValue = Math.abs(value);
-  const sign = value < 0 ? '-' : '';
-  
-  if (absValue >= 1e12) {
-    return `${sign}$${(absValue / 1e12).toFixed(1)}T`;
-  } else if (absValue >= 1e9) {
-    return `${sign}$${(absValue / 1e9).toFixed(1)}B`;
-  } else if (absValue >= 1e6) {
-    return `${sign}$${(absValue / 1e6).toFixed(1)}M`;
-  } else if (absValue >= 1e3) {
-    return `${sign}$${(absValue / 1e3).toFixed(1)}K`;
-  }
-  
-  return value;
-}
