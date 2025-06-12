@@ -120,7 +120,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data, darkMode }) =
       },
       timeScale: {
         borderColor: darkMode ? '#334155' : '#E2E8F0',
-        timeVisible: shouldShowTime,
+        timeVisible: false,
         secondsVisible: false,
       },
     });
