@@ -37,6 +37,7 @@ async function computeOHLCExpression(
   await Promise.all(
     symbols.map(async (symbol) => {
       const data = await fetchChartData(symbol, timeframe);
+      await new Promise(resolve => setTimeout(resolve, 1000));
       dataMap[symbol] = data;
     })
   );
