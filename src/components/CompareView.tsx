@@ -143,7 +143,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data, darkMode }) =
 
 // === Main App ===
 const ChartExpressionApp: React.FC = () => {
-  const [expression, setExpression] = useState('([AAPL] + [QQQ]) / 2');
+  const [expression, setExpression] = useState('([SPY] + [QQQ]) / 2');
   const [chartData, setChartData] = useState<CandlestickData[]>([]);
   const [loading, setLoading] = useState(false);
 
