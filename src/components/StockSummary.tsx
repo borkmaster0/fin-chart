@@ -65,7 +65,7 @@ const StockSummary: React.FC<StockSummaryProps> = ({ data, isLoading }) => {
             isPositive ? 'text-positive' : 'text-negative'
           }`}>
             {isPositive ? <TrendingUp className="w-4 h-4 mr-1" /> : <TrendingDown className="w-4 h-4 mr-1" />}
-            {(Math.abs(priceChange)).toFixed(2)} ({(Math.abs(percentChange)).toFixed(2)}%)
+            {(Math.abs(priceChange)).toFixed(2).toLocaleString()} ({(Math.abs(percentChange)).toFixed(2).toLocaleString()}%)
           </span>
         </div>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
@@ -91,7 +91,7 @@ const StockSummary: React.FC<StockSummaryProps> = ({ data, isLoading }) => {
         <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-700">
           <span className="text-slate-600 dark:text-slate-400">52 Week Range</span>
           <span className="font-medium">
-            {(meta.fiftyTwoWeekLow)} - {(meta.fiftyTwoWeekHigh)}
+            {(meta.fiftyTwoWeekLow).toLocaleString()} - {(meta.fiftyTwoWeekHigh).toLocaleString()}
           </span>
         </div>
         <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-700">
