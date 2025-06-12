@@ -56,6 +56,7 @@ async function computeOHLCExpression(
 
   const baseTimestamps = dataMap[symbols[0]].timestamp;
   const result: CandlestickData[] = [];
+  console.log(dataMap);
 
   for (let i = 0; i < baseTimestamps.length; i++) {
     const scope: Record<string, number> = {};
