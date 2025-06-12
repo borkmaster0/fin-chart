@@ -108,13 +108,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data }) => {
     const container = chartRef.current;
     const chart = createChart(chartRef.current, {
       width: 700, 
-      height: 400,
-      priceScaleId: 'right',
-      priceFormat: { 
-        type: 'price',
-        precision: 5,
-        minMove: 1 / Math.pow(10, 5)
-      }
+      height: 400
     });
     const series = chart.addSeries(CandlestickSeries, {
       layout: {
@@ -143,6 +137,12 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data }) => {
         timeVisible: false,
         secondsVisible: false,
       },
+      priceScaleId: 'right',
+      priceFormat: { 
+        type: 'price',
+        precision: 5,
+        minMove: 1 / Math.pow(10, 5)
+      }
     });
     series.setData(data);
     seriesRef.current = series;
