@@ -9,6 +9,24 @@ export interface CurrentPrice {
   longName?: string;
 }
 
+export async function fetchMostActiveStocks(symbol: string): Promise<ChartData> {
+  const url = `https://corsproxy.io/?https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?count=5&formatted=true&scrIds=MOST_ACTIVES&sortField=&sortType=&start=0&useRecordsResponse=false&fields=symbol`;
+  try {
+    const reponse = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return {
+      symbols: data.finance.result[0].quotes.map((item)=>(item.symbol))
+    };
+  } catch (error) {
+    console.error('Error fetching stock data:', error);
+    throw new Error(error instanceof Error ? error.message : 'Failed to fetch data');
+  }
+}
+
 export async function fetchChartData(symbol: string, timeframe: string): Promise<ChartData> {
   // Calculate start time based on timeframe
   const end = Math.floor(Date.now() / 1000);
