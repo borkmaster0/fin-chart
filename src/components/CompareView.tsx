@@ -36,7 +36,7 @@ async function fetchWithDelay(
   for (const symbol of symbols) {
     try {
       const data = await fetchChartData(symbol, timeframe);
-      dataMap[symbol] = data;
+      dataMap[symbol] = encodeURI(data);
     } catch (err) {
       console.error(`Failed to fetch data for ${symbol}:`, err);
     }
