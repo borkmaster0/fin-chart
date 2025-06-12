@@ -178,6 +178,7 @@ const ChartExpressionApp: React.FC = () => {
   const [expression, setExpression] = useState('([SPY] + [QQQ]) / 2');
   const [chartData, setChartData] = useState<CandlestickData[]>([]);
   const [loading, setLoading] = useState(false);
+  const [precision, setPrecision] = useState(2);
 
   const onEvaluate = async () => {
     setLoading(true);
