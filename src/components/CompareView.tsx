@@ -109,6 +109,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data }) => {
     const chart = createChart(chartRef.current, {
       width: 700, 
       height: 400,
+      priceScaleId: 'right',
       priceFormat: { 
         type: 'price',
         precision: 5,
