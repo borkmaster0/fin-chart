@@ -407,6 +407,10 @@ function App() {
         {currentView === 'backtesting' && (
           <BacktestingView />
         )}
+
+        {currentView === 'compare' && (
+          <CompareView />
+        )}
       </main>
       
       <footer className="bg-white dark:bg-slate-800 shadow-inner mt-auto py-4">
