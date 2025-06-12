@@ -91,7 +91,10 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data }) => {
   useEffect(() => {
     if (!chartRef.current) return;
 
-    const chart = createChart(chartRef.current, { width: 700, height: 400 });
+    const chart = createChart(chartRef.current, {
+      width: 700, 
+      height: 400 
+    });
     const series = chart.addSeries(CandlestickSeries, {
         upColor: '#26a69a',
         downColor: '#ef5350',
