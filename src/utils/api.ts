@@ -9,7 +9,7 @@ export interface CurrentPrice {
   longName?: string;
 }
 
-export sync function fetchTipRanksData(symbol: string): Promise<ChartData> {
+export async function fetchTipRanksData(symbol: string): Promise<ChartData> {
   const url = `https://www.tipranks.com/api/stocks/getHistoricalPriceExtended?name=${symbol}&daysBack=36500`;
   try {
     const reponse = await fetch(url);
