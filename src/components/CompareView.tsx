@@ -88,7 +88,7 @@ async function computeOHLCExpression(
       console.warn(`Skipping index ${i} due to error`, err);
     }
   }
-
+  console.log(result)
   return result;
 }
 
