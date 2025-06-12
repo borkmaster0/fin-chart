@@ -50,7 +50,7 @@ const StockSummary: React.FC<StockSummaryProps> = ({ data, isLoading }) => {
   const priceChange = currentPrice - previousClose;
   const percentChange = (priceChange / previousClose) * 100;
   const isPositive = priceChange >= 0;
-  console.log(data, meta);
+  const previousOpen = data.open.at(-1);
   
   return (
     <div className="card animate-fade-in">
@@ -76,11 +76,11 @@ const StockSummary: React.FC<StockSummaryProps> = ({ data, isLoading }) => {
       <div className="space-y-3 text-sm">
         <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-700">
           <span className="text-slate-600 dark:text-slate-400">Previous Close</span>
-          <span className="font-medium">{previousClose}</span>
+          <span className="font-medium">{previousClose.toFixed(2)}</span>
         </div>
         <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-700">
           <span className="text-slate-600 dark:text-slate-400">Open</span>
-          <span className="font-medium">{(meta.regularMarketOpen || 0)}</span>
+          <span className="font-medium">{(previousOpen || 0)}</span>
         </div>
         <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-700">
           <span className="text-slate-600 dark:text-slate-400">Day Range</span>
