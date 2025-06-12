@@ -21,7 +21,7 @@ function App() {
     return false;
   });
   
-  const [symbol, setSymbol] = useState('AAPL');
+  const [symbol, setSymbol] = useState('');
   const [timeframe, setTimeframe] = useState('1d');
   const [chartData, setChartData] = useState<ChartData | null>(null);
   const previousDataRef = useRef<ChartData | null>(null);
