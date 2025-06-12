@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Sun, Moon, LineChart, Menu, X, RefreshCw, Plus, BarChart3, Briefcase, TrendingUp, LineChart } from 'lucide-react';
+import { Sun, Moon, LineChart, Menu, X, RefreshCw, Plus, BarChart3, Briefcase, TrendingUp } from 'lucide-react';
 import SymbolSearch from './components/SymbolSearch';
 import ChartContainer from './components/ChartContainer';
 import TimeframeSelector from './components/TimeframeSelector';
