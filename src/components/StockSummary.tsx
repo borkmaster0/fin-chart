@@ -76,16 +76,16 @@ const StockSummary: React.FC<StockSummaryProps> = ({ data, isLoading }) => {
       <div className="space-y-3 text-sm">
         <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-700">
           <span className="text-slate-600 dark:text-slate-400">Previous Close</span>
-          <span className="font-medium">{previousClose.toFixed(2)}</span>
+          <span className="font-medium">{previousClose.toLocaleString()}</span>
         </div>
         <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-700">
           <span className="text-slate-600 dark:text-slate-400">Open</span>
-          <span className="font-medium">{(previousOpen.toFixed(2))}</span>
+          <span className="font-medium">{(previousOpen.toLocaleString())}</span>
         </div>
         <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-700">
           <span className="text-slate-600 dark:text-slate-400">Day Range</span>
           <span className="font-medium">
-            {(meta.regularMarketDayLow)} - {(meta.regularMarketDayHigh)}
+            {(meta.regularMarketDayLow).toLocaleString()} - {(meta.regularMarketDayHigh).toLocaleString()}
           </span>
         </div>
         <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-700">
@@ -97,7 +97,7 @@ const StockSummary: React.FC<StockSummaryProps> = ({ data, isLoading }) => {
         <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-700">
           <span className="text-slate-600 dark:text-slate-400">Volume</span>
           <span className="font-medium">
-            {meta.regularMarketVolume}
+            {meta.regularMarketVolume.toLocaleString()}
           </span>
         </div>
         <div className="flex justify-between py-2">
