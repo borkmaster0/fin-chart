@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { createChart, ISeriesApi, CandlestickSeries } from 'lightweight-charts';
+import { createChart, ISeriesApi, CandlestickSeries, ColorType } from 'lightweight-charts';
 import { evaluate } from 'mathjs';
 import { fetchChartData } from '../utils/api';
 import { ChartData } from '../types';
@@ -82,9 +82,10 @@ async function computeOHLCExpression(
 // === Chart Rendering ===
 interface CandlestickChartProps {
   data: CandlestickData[];
+  darkMode: boolean;
 }
 
-const CandlestickChart: React.FC<CandlestickChartProps> = ({ data }) => {
+const CandlestickChart: React.FC<CandlestickChartProps> = ({ data, darkMode }) => {
   const chartRef = useRef<HTMLDivElement>(null);
   const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
 
@@ -96,11 +97,31 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data }) => {
       height: 400 
     });
     const series = chart.addSeries(CandlestickSeries, {
-        upColor: '#26a69a',
-        downColor: '#ef5350',
-        borderVisible: false,
-        wickUpColor: '#26a69a',
-        wickDownColor: '#ef5350',
+      layout: {
+        background: { type: ColorType.Solid, color: darkMode ? '#1E293B' : '#FFFFFF' },
+        textColor: darkMode ? '#E2E8F0' : '#334155',
+      },
+      width: chartRef.current.clientWidth,
+      height: 500,
+      grid: {
+        vertLines: {
+          color: darkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.06)',
+        },
+        horzLines: {
+          color: darkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.06)',
+        },
+      },
+      rightPriceScale: {
+        borderColor: darkMode ? '#334155' : '#E2E8F0',
+      },
+      crosshair: {
+        mode: CrosshairMode.Normal
+      },
+      timeScale: {
+        borderColor: darkMode ? '#334155' : '#E2E8F0',
+        timeVisible: shouldShowTime,
+        secondsVisible: false,
+      },
     });
     series.setData(data);
     seriesRef.current = series;
