@@ -67,11 +67,33 @@ async function computeOHLCExpression(
 
     try {
       // Evaluate each price field independently
+      let missingData = false;
+
       for (const symbol of symbols) {
-        scope[safeVarName(symbol, 'close')] = dataMap[symbol].close[i];
-        scope[safeVarName(symbol, 'open')] = dataMap[symbol].open[i];
-        scope[safeVarName(symbol, 'high')] = dataMap[symbol].high[i];
-        scope[safeVarName(symbol, 'low')] = dataMap[symbol].low[i];
+        const d = dataMap[symbol];
+        const open = d?.open[i];
+        const high = d?.high[i];
+        const low = d?.low[i];
+        const close = d?.close[i];
+      
+        if (
+          open == null ||
+          high == null ||
+          low == null ||
+          close == null
+        ) {
+          missingData = true;
+          break; // Skip this index entirely
+        }
+      
+        scope[safeVarName(symbol, 'open')] = open;
+        scope[safeVarName(symbol, 'high')] = high;
+        scope[safeVarName(symbol, 'low')] = low;
+        scope[safeVarName(symbol, 'close')] = close;
+      }
+      
+      if (missingData) {
+        continue; // Skip this candle
       }
       
       // Replace [SYMBOL] with safe variable names
