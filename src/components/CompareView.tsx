@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { createChart, ISeriesApi, CandlestickSeries, ColorType, CrosshairMode } from 'lightweight-charts';
+import { createChart, ISeriesApi, CandlestickSeries, ColorType, CrosshairMode, ResizeObserver } from 'lightweight-charts';
 import { evaluate } from 'mathjs';
 import { fetchChartData } from '../utils/api';
 import { ChartData } from '../types';
@@ -139,6 +139,16 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data, darkMode }) =
     });
     series.setData(data);
     seriesRef.current = series;
+
+    const resizeObserver = new ResizeObserver(entries => {
+      for (let entry of entries) {
+        if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
+          chart.resize(entry.contentRect.width, entry.contentRect.height);
+        }
+      }
+    });
+
+    resizeObserver.observe(container);
 
     return () => {
       chart.remove();
