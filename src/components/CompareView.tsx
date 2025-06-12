@@ -55,70 +55,79 @@ async function computeOHLCExpression(
   timeframe: string,
   fetchChartData: (symbol: string, timeframe: string) => Promise<ChartData>
 ): Promise<CandlestickData[]> {
-  const symbols = extractSymbols(expression).map((item)=>(encodeURI(item)));
+  const symbols = extractSymbols(expression);
   const dataMap = await fetchWithDelay(symbols, timeframe, fetchChartData);
 
-  const baseTimestamps = dataMap[symbols[0]].timestamp;
-  const result: CandlestickData[] = [];
-  console.log(dataMap);
+  // 1. Convert timestamps into Sets for quick lookup
+  const symbolTimestamps: Record<string, Set<number>> = {};
+  for (const symbol of symbols) {
+    symbolTimestamps[symbol] = new Set(dataMap[symbol].timestamp);
+  }
 
-  for (let i = 0; i < baseTimestamps.length; i++) {
+  // 2. Find shared timestamps by filtering the one with the latest starting point
+  const alignedTimestamps = Object.values(dataMap)
+    .map(d => d.timestamp)
+    .reduce((acc, ts) => (ts[0] > acc[0] ? ts : acc));
+
+  const result: CandlestickData[] = [];
+
+  for (const time of alignedTimestamps) {
+    // Skip if any symbol doesn't have this timestamp
+    if (!symbols.every(sym => symbolTimestamps[sym].has(time))) continue;
+
     const scope: Record<string, number> = {};
+    let skip = false;
+
+    for (const symbol of symbols) {
+      const index = dataMap[symbol].timestamp.indexOf(time);
+      if (index === -1) {
+        skip = true;
+        break;
+      }
+
+      const d = dataMap[symbol];
+      const open = d.open[index];
+      const high = d.high[index];
+      const low = d.low[index];
+      const close = d.close[index];
+
+      if (
+        open == null ||
+        high == null ||
+        low == null ||
+        close == null
+      ) {
+        skip = true;
+        break;
+      }
+
+      scope[safeVarName(symbol, 'open')] = open;
+      scope[safeVarName(symbol, 'high')] = high;
+      scope[safeVarName(symbol, 'low')] = low;
+      scope[safeVarName(symbol, 'close')] = close;
+    }
+
+    if (skip) continue;
+
+    const cleanExpr = (type: 'close' | 'open' | 'high' | 'low') =>
+      expression.replace(/\[([^\]]+)]/g, (_, s) => safeVarName(s, type));
 
     try {
-      // Evaluate each price field independently
-      let missingData = false;
-
-      for (const symbol of symbols) {
-        const d = dataMap[symbol];
-        const open = d?.open[i];
-        const high = d?.high[i];
-        const low = d?.low[i];
-        const close = d?.close[i];
-      
-        if (
-          open == null ||
-          high == null ||
-          low == null ||
-          close == null
-        ) {
-          missingData = true;
-          break; // Skip this index entirely
-        }
-      
-        scope[safeVarName(symbol, 'open')] = open;
-        scope[safeVarName(symbol, 'high')] = high;
-        scope[safeVarName(symbol, 'low')] = low;
-        scope[safeVarName(symbol, 'close')] = close;
-      }
-      
-      if (missingData) {
-        continue; // Skip this candle
-      }
-      
-      // Replace [SYMBOL] with safe variable names
-      const cleanExpr = (type: 'close' | 'open' | 'high' | 'low') =>
-        expression.replace(/\[([^\]]+)]/g, (_, s) => safeVarName(s, type));
-
-      const close = evaluate(cleanExpr('close'), scope);
-      const open = evaluate(cleanExpr('open'), scope);
-      const high = evaluate(cleanExpr('high'), scope);
-      const low = evaluate(cleanExpr('low'), scope);
-
       result.push({
-        time: baseTimestamps[i],
-        open,
-        high,
-        low,
-        close,
+        time,
+        open: evaluate(cleanExpr('open'), scope),
+        high: evaluate(cleanExpr('high'), scope),
+        low: evaluate(cleanExpr('low'), scope),
+        close: evaluate(cleanExpr('close'), scope),
       });
     } catch (err) {
-      console.warn(`Skipping index ${i} due to error`, err);
+      console.warn(`Error evaluating expression at time ${time}:`, err);
     }
   }
-  console.log(result)
+
   return result;
 }
+
 
 // === Chart Rendering ===
 interface CandlestickChartProps {
