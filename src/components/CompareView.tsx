@@ -65,9 +65,23 @@ async function computeOHLCExpression(
   }
 
   // 2. Find shared timestamps by filtering the one with the latest starting point
-  const alignedTimestamps = Object.values(dataMap)
-    .map(d => d.timestamp)
-    .reduce((acc, ts) => (ts[0] > acc[0] ? ts : acc));
+    function intersectSets(sets: Set<number>[]): number[] {
+    if (sets.length === 0) return [];
+  
+    const [first, ...rest] = sets;
+    const result: number[] = [];
+  
+    for (const t of first) {
+      if (rest.every(s => s.has(t))) {
+        result.push(t);
+      }
+    }
+  
+    return result.sort((a, b) => a - b); // ascending
+  }
+  
+  const timestampSets = symbols.map(sym => new Set(dataMap[sym].timestamp));
+  const alignedTimestamps = intersectSets(timestampSets);
 
   const result: CandlestickData[] = [];
 
