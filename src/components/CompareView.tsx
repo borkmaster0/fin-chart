@@ -134,20 +134,37 @@ const ChartExpressionApp: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: '1rem' }}>
-      <h2>OHLC Expression Chart</h2>
-      <input
-        value={expression}
-        onChange={(e) => setExpression(e.target.value)}
-        placeholder="Enter expression, e.g. ([AAPL] + [QQQ]) / 2"
-        style={{ width: '400px', marginRight: '1rem' }}
-      />
-      <button onClick={onEvaluate} disabled={loading}>
-        {loading ? 'Computing...' : 'Evaluate'}
-      </button>
+    <div className="max-w-4xl mx-auto px-4 py-8">
+      <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+        <Calculator className="w-6 h-6 text-blue-500" />
+        OHLC Expression Chart
+      </h2>
+
+      <div className="flex flex-col md:flex-row items-center gap-4 mb-6">
+        <input
+          value={expression}
+          onChange={(e) => setExpression(e.target.value)}
+          placeholder="Enter expression, e.g. ([AAPL] + [QQQ]) / 2"
+          className="w-full md:w-[400px] px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+        />
+        <button
+          onClick={onEvaluate}
+          disabled={loading}
+          className="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition disabled:opacity-50"
+        >
+          {loading ? (
+            <>
+              <Loader2 className="animate-spin mr-2 w-4 h-4" />
+              Computing...
+            </>
+          ) : (
+            'Evaluate'
+          )}
+        </button>
+      </div>
 
       {chartData.length > 0 && (
-        <div className="w-full h-[500px] rounded-lg overflow-hidden">
+        <div className="w-full h-[500px] rounded-lg border border-gray-200 shadow-md overflow-hidden">
           <CandlestickChart data={chartData} />
         </div>
       )}
