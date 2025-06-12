@@ -124,7 +124,7 @@ async function computeOHLCExpression(
       console.warn(`Error evaluating expression at time ${time}:`, err);
     }
   }
-
+  console.log(result);
   return result;
 }
 
