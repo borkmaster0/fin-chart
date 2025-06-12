@@ -138,7 +138,7 @@ const ChartExpressionApp: React.FC = () => {
     <div className="max-w-4xl mx-auto px-4 py-8">
       <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
         <Calculator className="w-6 h-6 text-blue-500" />
-        OHLC Expression Chart
+        Expression Chart
       </h2>
 
       <div className="flex flex-col md:flex-row items-center gap-4 mb-6">
@@ -146,7 +146,7 @@ const ChartExpressionApp: React.FC = () => {
           value={expression}
           onChange={(e) => setExpression(e.target.value)}
           placeholder="Enter expression, e.g. ([AAPL] + [QQQ]) / 2"
-          className="w-full md:w-[400px] px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+          className="w-full md:w-[400px] px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition dark:text-black"
         />
         <button
           onClick={onEvaluate}
