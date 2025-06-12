@@ -100,6 +100,7 @@ interface CandlestickChartProps {
 
 const CandlestickChart: React.FC<CandlestickChartProps> = ({ data, darkMode }) => {
   const chartRef = useRef<HTMLDivElement>(null);
+  const chartInstance = useRef<ReturnType<typeof createChart> | null>(null);
   const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
 
   useEffect(() => {
@@ -151,6 +152,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data, darkMode }) =
     resizeObserver.observe(container);
 
     return () => {
+      resizeObserver.disconnect();
       chart.remove();
     };
   }, []);
@@ -161,7 +163,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data, darkMode }) =
     }
   }, [data]);
 
-  return <div ref={chartRef} />;
+  return <div ref={chartRef} className="w-full h-full" />;
 };
 
 // === Main App ===
