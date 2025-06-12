@@ -409,7 +409,7 @@ function App() {
         )}
 
         {currentView === 'compare' && (
-          <CompareView />
+          <CompareView darkMode={darkMode}/>
         )}
       </main>
       
