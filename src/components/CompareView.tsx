@@ -26,21 +26,38 @@ function extractSymbols(expression: string): string[] {
   return matches ? [...new Set(matches.map(m => m.slice(1, -1)))] : [];
 }
 
+const fetchAllData = async (symbols: string[]) => {
+  const data: { [symbol: string]: SymbolData } = {};
+  
+  setFetchProgress({ current: 0, total: symbols.length, symbol: '' });
+  
+  for (let i = 0; i < symbols.length; i++) {
+    const symbol = symbols[i];
+    setFetchProgress({ current: i + 1, total: symbols.length, symbol });
+    
+    try {
+      const chartData = await fetchChartData(symbol, '1d');
+      data[symbol] = processSymbolData(chartData);
+      
+      // Wait 1 second between requests
+      if (i < symbols.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    } catch (error) {
+      console.error(`Failed to fetch data for ${symbol}:`, error);
+    }
+  }
+  
+  return data;
+};
+
 async function computeOHLCExpression(
   expression: string,
   timeframe: string,
   fetchChartData: (symbol: string, timeframe: string) => Promise<ChartData>
 ): Promise<CandlestickData[]> {
   const symbols = extractSymbols(expression);
-  const dataMap: Record<string, ChartData> = {};
-
-  await Promise.all(
-    symbols.map(async (symbol) => {
-      const data = await fetchChartData(symbol, timeframe);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      dataMap[symbol] = data;
-    })
-  );
+  const dataMap = await fetchWithDelay(symbols, timeframe, fetchChartData);
 
   const baseTimestamps = dataMap[symbols[0]].timestamp;
   const result: CandlestickData[] = [];
