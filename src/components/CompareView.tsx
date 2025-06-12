@@ -72,7 +72,7 @@ async function computeOHLCExpression(
         close,
       });
     } catch (err) {
-      console.warn(`Skipping index ${i} due to error`, err);
+      console.warn(`Skipping index ${i} due to error`, err, result);
     }
   }
 
