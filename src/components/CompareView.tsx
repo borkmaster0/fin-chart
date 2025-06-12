@@ -101,11 +101,12 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data }) => {
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<ReturnType<typeof createChart> | null>(null);
   const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
+  const [precision, setPrecision] = useState(2);
 
   useEffect(() => {
     if (!chartRef.current) return;
     const darkMode = localStorage.darkMode;
-    const container = chartRef.current;
+    const container = chartRef.current;  
     const chart = createChart(chartRef.current, {
       width: 700, 
       height: 400
@@ -140,8 +141,8 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data }) => {
       priceScaleId: 'right',
       priceFormat: { 
         type: 'price',
-        precision: 5,
-        minMove: 1 / Math.pow(10, 5)
+        precision: precision,
+        minMove: 1 / Math.pow(10, precision)
       }
     });
     series.setData(data);
@@ -161,7 +162,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data }) => {
       resizeObserver.disconnect();
       chart.remove();
     };
-  }, []);
+  }, [precision]);
 
   useEffect(() => {
     if (seriesRef.current) {
