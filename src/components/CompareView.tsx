@@ -3,6 +3,7 @@ import { createChart, ISeriesApi, CandlestickSeries } from 'lightweight-charts';
 import { evaluate } from 'mathjs';
 import { fetchChartData } from '../utils/api';
 import { ChartData } from '../types';
+import { Calculator, Loader2 } from 'lucide-react'; // Lucide icons
 
 // === Types ===
 interface ChartData {
