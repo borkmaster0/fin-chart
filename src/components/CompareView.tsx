@@ -146,6 +146,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data, precision }) 
       }
     });
     series.setData(data);
+    chartInstance.current = chart;
     seriesRef.current = series;
 
     const resizeObserver = new ResizeObserver(entries => {
@@ -162,7 +163,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data, precision }) 
       resizeObserver.disconnect();
       chart.remove();
     };
-  }, []);
+  }, [precision]);
 
   useEffect(() => {
     if (seriesRef.current) {
