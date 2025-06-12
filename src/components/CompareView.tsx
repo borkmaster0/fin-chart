@@ -95,10 +95,9 @@ async function computeOHLCExpression(
 // === Chart Rendering ===
 interface CandlestickChartProps {
   data: CandlestickData[];
-  darkMode: boolean;
 }
 
-const CandlestickChart: React.FC<CandlestickChartProps> = ({ data, darkMode }) => {
+const CandlestickChart: React.FC<CandlestickChartProps> = ({ data }) => {
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<ReturnType<typeof createChart> | null>(null);
   const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
@@ -217,7 +216,7 @@ const ChartExpressionApp: React.FC = () => {
 
       {chartData.length > 0 && (
       <div className="relative w-full h-[300px] md:h-[500px] rounded-lg border border-gray-200 shadow-md overflow-hidden">
-        <CandlestickChart data={chartData} darkMode={localStorage.getItem('darkMode')} />
+        <CandlestickChart data={chartData} />
       </div>
       )}
     </div>
