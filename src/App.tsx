@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Sun, Moon, LineChart, Menu, X, RefreshCw, Plus, BarChart3, Briefcase, TrendingUp } from 'lucide-react';
+import { Sun, Moon, LineChart, Menu, X, RefreshCw, Plus, BarChart3, Briefcase, TrendingUp, ChartSpline } from 'lucide-react';
 import SymbolSearch from './components/SymbolSearch';
 import ChartContainer from './components/ChartContainer';
 import TimeframeSelector from './components/TimeframeSelector';
@@ -179,6 +179,7 @@ function App() {
     { id: 'chart', label: 'Chart', icon: BarChart3 },
     { id: 'portfolio', label: 'Portfolio', icon: Briefcase },
     { id: 'backtesting', label: 'Backtesting', icon: TrendingUp },
+    { id: 'compare', label: 'Compare', icon: ChartSpline }
   ];
 
   return (
