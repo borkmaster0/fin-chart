@@ -126,6 +126,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data, darkMode }) =
       },
       rightPriceScale: {
         borderColor: darkMode ? '#334155' : '#E2E8F0',
+        borderVisible: true
       },
       crosshair: {
         mode: CrosshairMode.Normal
