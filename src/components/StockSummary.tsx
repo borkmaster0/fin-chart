@@ -65,7 +65,7 @@ const StockSummary: React.FC<StockSummaryProps> = ({ data, isLoading }) => {
             isPositive ? 'text-positive' : 'text-negative'
           }`}>
             {isPositive ? <TrendingUp className="w-4 h-4 mr-1" /> : <TrendingDown className="w-4 h-4 mr-1" />}
-            {(Math.abs(priceChange))} ({(Math.abs(percentChange))})
+            {(Math.abs(priceChange))} ({(Math.abs(percentChange))}%)
           </span>
         </div>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
