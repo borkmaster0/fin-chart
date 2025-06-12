@@ -101,7 +101,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data }) => {
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<ReturnType<typeof createChart> | null>(null);
   const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
-  const [precision, setPrecision] = useState(2);
+  const [precision, setPrecision] = useState(5);
 
   useEffect(() => {
     if (!chartRef.current) return;
