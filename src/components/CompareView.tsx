@@ -203,9 +203,11 @@ const ChartExpressionApp: React.FC = () => {
       </div>
 
       {chartData.length > 0 && (
+      <>
         <div className="w-full h-[500px] rounded-lg border border-gray-200 shadow-md overflow-hidden">
           <CandlestickChart data={chartData} />
         </div>
+      </>
       )}
     </div>
   );
