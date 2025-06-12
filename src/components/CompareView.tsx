@@ -232,7 +232,6 @@ const ChartExpressionApp: React.FC = () => {
           ))}
         </select>
       </div>
-
       {chartData.length > 0 && (
       <div className="relative w-full h-[600px] md:h-[500px] rounded-lg border border-gray-200 shadow-md overflow-hidden">
         <CandlestickChart data={chartData} />
