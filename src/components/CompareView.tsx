@@ -36,7 +36,7 @@ async function fetchWithDelay(
   for (const symbol of symbols) {
     try {
       const data = await fetchChartData(symbol, timeframe);
-      dataMap[symbol] = encodeURI(data);
+      dataMap[symbol] = data;
     } catch (err) {
       console.error(`Failed to fetch data for ${symbol}:`, err);
     }
@@ -51,7 +51,7 @@ async function computeOHLCExpression(
   timeframe: string,
   fetchChartData: (symbol: string, timeframe: string) => Promise<ChartData>
 ): Promise<CandlestickData[]> {
-  const symbols = extractSymbols(expression);
+  const symbols = extractSymbols(expression).map((item)=>(encodeURI(item)));
   const dataMap = await fetchWithDelay(symbols, timeframe, fetchChartData);
 
   const baseTimestamps = dataMap[symbols[0]].timestamp;
