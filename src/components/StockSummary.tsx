@@ -64,7 +64,7 @@ const StockSummary: React.FC<StockSummaryProps> = ({ data, isLoading }) => {
             isPositive ? 'text-positive' : 'text-negative'
           }`}>
             {isPositive ? <TrendingUp className="w-4 h-4 mr-1" /> : <TrendingDown className="w-4 h-4 mr-1" />}
-            {formatCurrency(Math.abs(priceChange))} ({formatPercent(Math.abs(percentChange))})
+            {(Math.abs(priceChange))} ({(Math.abs(percentChange))})
           </span>
         </div>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
@@ -75,22 +75,22 @@ const StockSummary: React.FC<StockSummaryProps> = ({ data, isLoading }) => {
       <div className="space-y-3 text-sm">
         <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-700">
           <span className="text-slate-600 dark:text-slate-400">Previous Close</span>
-          <span className="font-medium">{formatCurrency(meta.previousClose)}</span>
+          <span className="font-medium">{(meta.previousClose)}</span>
         </div>
         <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-700">
           <span className="text-slate-600 dark:text-slate-400">Open</span>
-          <span className="font-medium">{formatCurrency(meta.regularMarketOpen || 0)}</span>
+          <span className="font-medium">{(meta.regularMarketOpen || 0)}</span>
         </div>
         <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-700">
           <span className="text-slate-600 dark:text-slate-400">Day Range</span>
           <span className="font-medium">
-            {formatCurrency(meta.regularMarketDayLow)} - {formatCurrency(meta.regularMarketDayHigh)}
+            {(meta.regularMarketDayLow)} - {(meta.regularMarketDayHigh)}
           </span>
         </div>
         <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-700">
           <span className="text-slate-600 dark:text-slate-400">52 Week Range</span>
           <span className="font-medium">
-            {formatCurrency(meta.fiftyTwoWeekLow)} - {formatCurrency(meta.fiftyTwoWeekHigh)}
+            {(meta.fiftyTwoWeekLow)} - {(meta.fiftyTwoWeekHigh)}
           </span>
         </div>
         <div className="flex justify-between py-2">
