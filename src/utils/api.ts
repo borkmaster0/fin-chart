@@ -1,4 +1,4 @@
-import { ChartData } from '../types';
+import { ChartData, StockArray } from '../types';
 
 export interface CurrentPrice {
   symbol: string;
@@ -9,7 +9,7 @@ export interface CurrentPrice {
   longName?: string;
 }
 
-export async function fetchMostActiveStocks(symbol: string): Promise<ChartData> {
+export async function fetchMostActiveStocks(symbol: string): Promise<StockArray> {
   const url = `https://corsproxy.io/?https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?count=5&formatted=true&scrIds=MOST_ACTIVES&sortField=&sortType=&start=0&useRecordsResponse=false&fields=symbol`;
   try {
     const reponse = await fetch(url);
@@ -23,6 +23,24 @@ export async function fetchMostActiveStocks(symbol: string): Promise<ChartData> 
     };
   } catch (error) {
     console.error('Error fetching stock data:', error);
+    throw new Error(error instanceof Error ? error.message : 'Failed to fetch data');
+  }
+}
+
+export async function fetchTrendingStocks(symbol: string): Promise<StockArray> {
+  const url = `https://query1.finance.yahoo.com/v1/finance/trending/US?count=25&fields=logoUrl%2ClongName%2CshortName%2CregularMarketChange%2CregularMarketChangePercent%2CregularMarketPrice%2Cticker%2Csymbol%2ClongName%2Csparkline%2CshortName%2CregularMarketPrice%2CregularMarketChange%2CregularMarketChangePercent%2CregularMarketVolume%2CaverageDailyVolume3Month%2CmarketCap%2CtrailingPE%2CfiftyTwoWeekChangePercent%2CfiftyTwoWeekRange%2CregularMarketOpen&format=true&useQuotes=true&quoteType=equity`;
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return {
+      symbols: data.finance.result[0].quotes.map((item)=>(item.symbol))
+    };
+  } catch (error) {
+    console.error('Error fetching trending stock data: ', error);
     throw new Error(error instanceof Error ? error.message : 'Failed to fetch data');
   }
 }
