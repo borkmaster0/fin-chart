@@ -66,7 +66,7 @@ async function computeOHLCExpression(
   }
 
   // 2. Find shared timestamps by filtering the one with the latest starting point
-    function intersectSets(sets: Set<number>[]): number[] {
+  function intersectSets(sets: Set<number>[]): number[] {
     if (sets.length === 0) return [];
   
     const [first, ...rest] = sets;
