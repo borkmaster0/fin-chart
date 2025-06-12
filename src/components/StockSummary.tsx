@@ -97,7 +97,7 @@ const StockSummary: React.FC<StockSummaryProps> = ({ data, isLoading }) => {
         <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-700">
           <span className="text-slate-600 dark:text-slate-400">Volume</span>
           <span className="font-medium">
-            {formatLargeNumber(meta.regularMarketVolume)}
+            {formatLargeNumber(Number(meta.regularMarketVolume))}
           </span>
         </div>
         <div className="flex justify-between py-2">
