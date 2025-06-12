@@ -42,7 +42,7 @@ const SymbolSearch: React.FC<SymbolSearchProps> = ({ symbol, onSymbolChange }) =
   };
 
   const debouncedSearch = useCallback(
-    debounce((query: string) => searchSymbols(query), 1000),
+    debounce((query: string) => searchSymbols(query), 100),
     []
   );
 
