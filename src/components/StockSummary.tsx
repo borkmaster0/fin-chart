@@ -58,7 +58,7 @@ const StockSummary: React.FC<StockSummaryProps> = ({ data, isLoading }) => {
       <div className="mb-4">
         <div className="flex items-baseline">
           <span className="text-2xl font-bold">
-            {formatCurrency(currentPrice)}
+            {currentPrice}
           </span>
           <span className={`ml-2 flex items-center text-sm font-medium ${
             isPositive ? 'text-positive' : 'text-negative'
