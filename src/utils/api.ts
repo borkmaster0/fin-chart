@@ -10,7 +10,7 @@ export interface CurrentPrice {
 }
 
 export async function fetchTipRanksData(symbol: string): Promise<ChartData> {
-  const url = `https://www.tipranks.com/api/stocks/getHistoricalPriceExtended?name=${symbol}&daysBack=36500`;
+  const url = `https://corsproxy.io/?https://www.tipranks.com/api/stocks/getHistoricalPriceExtended?name=${symbol}&daysBack=36500`;
   try {
     const reponse = await fetch(url);
     if (!response.ok) {
