@@ -50,6 +50,7 @@ const StockSummary: React.FC<StockSummaryProps> = ({ data, isLoading }) => {
   const priceChange = currentPrice - previousClose;
   const percentChange = (priceChange / previousClose) * 100;
   const isPositive = priceChange >= 0;
+  console.log(data, meta);
   
   return (
     <div className="card animate-fade-in">
