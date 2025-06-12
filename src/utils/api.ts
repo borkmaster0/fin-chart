@@ -9,29 +9,6 @@ export interface CurrentPrice {
   longName?: string;
 }
 
-export async function fetchTipRanksData(symbol: string): Promise<ChartData> {
-  const url = `https://corsproxy.io/?https://www.tipranks.com/api/stocks/getHistoricalPriceExtended?name=${symbol}&daysBack=365000`;
-  try {
-    const reponse = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return {
-      timestamps: data.map((item)=>(new Date(item.date).getTime())),
-      close: data.map((item)=>(item.close)),
-      open: data.map((item)=>(item.open)),
-      high: data.map((item)=>(item.high)),
-      low: data.map((item)=>(item.low)),
-      volume: data.map((item)=>(item.volume))
-    };
-  } catch (error) {
-    console.error('Error fetching chart data:', error);
-    throw new Error(error instanceof Error ? error.message : 'Failed to fetch data');
-  }
-}
-
 export async function fetchChartData(symbol: string, timeframe: string): Promise<ChartData> {
   // Calculate start time based on timeframe
   const end = Math.floor(Date.now() / 1000);
