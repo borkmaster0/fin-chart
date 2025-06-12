@@ -120,6 +120,7 @@ async function computeOHLCExpression(
         low: evaluate(cleanExpr('low'), scope),
         close: evaluate(cleanExpr('close'), scope),
       });
+      skip = false
     } catch (err) {
       console.warn(`Error evaluating expression at time ${time}:`, err);
     }
