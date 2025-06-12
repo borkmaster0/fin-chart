@@ -96,7 +96,7 @@ const StockSummary: React.FC<StockSummaryProps> = ({ data, isLoading }) => {
         </div>
         <div className="flex justify-between py-2">
           <span className="text-slate-600 dark:text-slate-400">Exchange</span>
-          <span className="font-medium">{meta.exchangeName}</span>
+          <span className="font-medium">{meta.fullExchangeName}</span>
         </div>
       </div>
     </div>
