@@ -45,7 +45,7 @@ const StockSummary: React.FC<StockSummaryProps> = ({ data, isLoading }) => {
 
   const { meta } = data;
   
-  const previousClose = meta.previousClose;
+  const previousClose = meta.chartPreviousClose;
   const currentPrice = meta.regularMarketPrice;
   const priceChange = currentPrice - previousClose;
   const percentChange = (priceChange / previousClose) * 100;
