@@ -147,7 +147,7 @@ const ChartExpressionApp: React.FC = () => {
       </button>
 
       {chartData.length > 0 && (
-        <div style={{ marginTop: '2rem' }}>
+        <div className="w-full h-[500px] rounded-lg overflow-hidden">
           <CandlestickChart data={chartData} />
         </div>
       )}
