@@ -44,3 +44,7 @@ interface ChartPoint {
   time: number;
   value: number;
 }
+
+export interface StockArray {
+  symbols: string[];
+}
