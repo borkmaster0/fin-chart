@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { createChart, ISeriesApi, CandlestickSeries, ColorType } from 'lightweight-charts';
+import { createChart, ISeriesApi, CandlestickSeries, ColorType, CrosshairMode } from 'lightweight-charts';
 import { evaluate } from 'mathjs';
 import { fetchChartData } from '../utils/api';
 import { ChartData } from '../types';
