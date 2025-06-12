@@ -76,7 +76,7 @@ const StockSummary: React.FC<StockSummaryProps> = ({ data, isLoading }) => {
       <div className="space-y-3 text-sm">
         <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-700">
           <span className="text-slate-600 dark:text-slate-400">Previous Close</span>
-          <span className="font-medium">{(meta.previousClose)}</span>
+          <span className="font-medium">{(meta.chartPreviousClose)}</span>
         </div>
         <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-700">
           <span className="text-slate-600 dark:text-slate-400">Open</span>
