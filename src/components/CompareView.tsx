@@ -217,7 +217,7 @@ const ChartExpressionApp: React.FC = () => {
 
       {chartData.length > 0 && (
       <div className="relative w-full h-[300px] md:h-[500px] rounded-lg border border-gray-200 shadow-md overflow-hidden">
-        <CandlestickChart data={chartData} />
+        <CandlestickChart data={chartData} darkMode={localStorage.getItem('darkMode')} />
       </div>
       )}
     </div>
