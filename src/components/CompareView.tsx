@@ -104,7 +104,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data }) => {
 
   useEffect(() => {
     if (!chartRef.current) return;
-    
+    const darkMode = localStorage.darkMode;
     const container = chartRef.current;
     const chart = createChart(chartRef.current, {
       width: 700, 
