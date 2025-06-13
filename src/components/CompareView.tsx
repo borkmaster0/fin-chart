@@ -2,8 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createChart, ISeriesApi, CandlestickSeries, ColorType, CrosshairMode } from 'lightweight-charts';
 import { evaluate } from 'mathjs';
 import { fetchChartData } from '../utils/api';
-import { ChartData } from '../types';
-import { Calculator, Loader2 } from 'lucide-react'; // Lucide icons
+import { Calculator, Loader2 } from 'lucide-react';
 
 // === Types ===
 interface ChartData {
@@ -18,6 +17,14 @@ interface ChartData {
     dividends: Record<string, { amount: number; date: number }>;
     splits: Record<string, { date: number; numerator: number; denominator: number; splitRatio: string }>;
   };
+}
+
+interface CandlestickData {
+  time: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
 }
 
 // === Helpers ===
@@ -44,7 +51,7 @@ async function fetchWithDelay(
     } catch (err) {
       console.error(`Failed to fetch data for ${symbol}:`, err);
     }
-    await new Promise((resolve) => setTimeout(resolve, 1000)); // ⏱️ 1-second delay
+    await new Promise((resolve) => setTimeout(resolve, 1000)); // 1-second delay
   }
 
   return dataMap;
@@ -58,35 +65,32 @@ async function computeOHLCExpression(
   const symbols = extractSymbols(expression);
   const dataMap = await fetchWithDelay(symbols, timeframe, fetchChartData);
 
-  // 1. Convert timestamps into Sets for quick lookup
   const symbolTimestamps: Record<string, Set<number>> = {};
   for (const symbol of symbols) {
-    symbolTimestamps[symbol] = new Set(dataMap[symbol].timestamp);
+    symbolTimestamps[symbol] = new Set(dataMap[symbol]?.timestamp || []);
   }
 
-  // 2. Find shared timestamps by filtering the one with the latest starting point
   function intersectSets(sets: Set<number>[]): number[] {
     if (sets.length === 0) return [];
-  
+
     const [first, ...rest] = sets;
     const result: number[] = [];
-  
+
     for (const t of first) {
       if (rest.every(s => s.has(t))) {
         result.push(t);
       }
     }
-  
-    return result.sort((a, b) => a - b); // ascending
+
+    return result.sort((a, b) => a - b);
   }
-  
-  const timestampSets = symbols.map(sym => new Set(dataMap[sym].timestamp));
+
+  const timestampSets = symbols.map(sym => new Set(dataMap[sym]?.timestamp || []));
   const alignedTimestamps = intersectSets(timestampSets);
 
   const result: CandlestickData[] = [];
 
   for (const time of alignedTimestamps) {
-    // Skip if any symbol doesn't have this timestamp
     if (!symbols.every(sym => symbolTimestamps[sym].has(time))) continue;
 
     const scope: Record<string, number> = {};
@@ -138,44 +142,35 @@ async function computeOHLCExpression(
       console.warn(`Error evaluating expression at time ${time}:`, err);
     }
   }
-  
+
   return result;
 }
 
-
-// === Chart Rendering ===
+// === CandlestickChart supporting multiple series ===
 interface CandlestickChartProps {
-  data: CandlestickData[];
+  seriesData: Record<string, CandlestickData[]>;
+  selectedPlots: string[];
   precision: number;
 }
 
-const CandlestickChart: React.FC<CandlestickChartProps> = ({ data, precision }) => {
+const colors = ['#2196F3', '#4CAF50', '#F44336', '#FF9800', '#9C27B0', '#009688', '#673AB7'];
+
+const CandlestickChart: React.FC<CandlestickChartProps> = ({ seriesData, selectedPlots, precision }) => {
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<ReturnType<typeof createChart> | null>(null);
-  const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
-  const [hoveredValues, setHoveredValues] = useState<{
-    time?: number;
-    open?: number;
-    high?: number;
-    low?: number;
-    close?: number;
-  } | null>(null);
+  const seriesRefs = useRef<Record<string, ISeriesApi<'Candlestick'>>>({});
 
   useEffect(() => {
     if (!chartRef.current) return;
-    const darkMode = localStorage.darkMode;
-    const container = chartRef.current;  
+    const darkMode = localStorage.darkMode === 'true';
+
     const chart = createChart(chartRef.current, {
-      width: 700, 
-      height: 400
-    });
-    const series = chart.addSeries(CandlestickSeries, {
+      width: chartRef.current.clientWidth,
+      height: 400,
       layout: {
         background: { type: ColorType.Solid, color: darkMode ? '#1E293B' : '#FFFFFF' },
         textColor: darkMode ? '#E2E8F0' : '#334155',
       },
-      width: chartRef.current.clientWidth,
-      height: 500,
       grid: {
         vertLines: {
           color: darkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.06)',
@@ -186,27 +181,19 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data, precision }) 
       },
       rightPriceScale: {
         borderColor: darkMode ? '#334155' : '#E2E8F0',
-        borderVisible: true
+        borderVisible: true,
       },
       crosshair: {
-        mode: CrosshairMode.Normal
+        mode: CrosshairMode.Normal,
       },
       timeScale: {
         borderColor: darkMode ? '#334155' : '#E2E8F0',
         timeVisible: false,
         secondsVisible: false,
       },
-      priceScaleId: 'right',
-      priceFormat: { 
-        type: 'price',
-        precision: precision,
-        minMove: 1 / Math.pow(10, precision)
-      }
     });
-    
-    series.setData(data);
+
     chartInstance.current = chart;
-    seriesRef.current = series;
 
     const resizeObserver = new ResizeObserver(entries => {
       for (let entry of entries) {
@@ -216,74 +203,97 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data, precision }) 
       }
     });
 
-    resizeObserver.observe(container);
-
-    chart.subscribeCrosshairMove(param => {
-      if (!param?.time || !param.seriesData) {
-        setHoveredValues(null);
-        return;
-      }
-    
-      const seriesData = param.seriesData.get(series);
-      if (seriesData) {
-        const { open, high, low, close } = seriesData as CandlestickData;
-        setHoveredValues({ time: param.time as number, open, high, low, close });
-      } else {
-        setHoveredValues(null);
-      }
-    });
+    resizeObserver.observe(chartRef.current);
 
     return () => {
       resizeObserver.disconnect();
       chart.remove();
     };
-  }, [precision]);
+  }, []);
 
   useEffect(() => {
-    if (seriesRef.current) {
-      seriesRef.current.setData(data);
-    }
-  }, [data]);
+    if (!chartInstance.current) return;
 
-  return (
-    <div ref={chartRef} className="relative w-full h-full">
-      {hoveredValues && (
-        <div className="absolute top-2 left-4 bg-white dark:bg-slate-800 text-sm shadow-md border border-gray-200 dark:border-gray-700 rounded px-3 py-2 z-10">
-          <div className="font-semibold text-gray-700 dark:text-gray-200">
-            O: <span className="text-blue-500">{hoveredValues.open?.toFixed(precision)}</span>
-          </div>
-          <div className="font-semibold text-gray-700 dark:text-gray-200">
-            H: <span className="text-green-500">{hoveredValues.high?.toFixed(precision)}</span>
-          </div>
-          <div className="font-semibold text-gray-700 dark:text-gray-200">
-            L: <span className="text-red-500">{hoveredValues.low?.toFixed(precision)}</span>
-          </div>
-          <div className="font-semibold text-gray-700 dark:text-gray-200">
-            C: <span className="text-purple-500">{hoveredValues.close?.toFixed(precision)}</span>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+    // Remove series that are no longer selected
+    for (const key of Object.keys(seriesRefs.current)) {
+      if (!selectedPlots.includes(key)) {
+        chartInstance.current.removeSeries(seriesRefs.current[key]);
+        delete seriesRefs.current[key];
+      }
+    }
+
+    // Add or update series for selected plots
+    selectedPlots.forEach((key, idx) => {
+      const data = seriesData[key];
+      if (!data) return;
+
+      if (!seriesRefs.current[key]) {
+        const color = colors[idx % colors.length];
+        const series = chartInstance.current.addCandlestickSeries({
+          upColor: color,
+          downColor: color,
+          borderVisible: true,
+          wickVisible: true,
+          priceLineVisible: false,
+        });
+        seriesRefs.current[key] = series;
+      }
+
+      seriesRefs.current[key].setData(data);
+    });
+  }, [seriesData, selectedPlots]);
+
+  return <div ref={chartRef} className="relative w-full h-full" />;
 };
 
 // === Main App ===
 const ChartExpressionApp: React.FC = () => {
   const [expression, setExpression] = useState('([SPY] + [QQQ]) / 2');
-  const [chartData, setChartData] = useState<CandlestickData[]>([]);
+  const [symbolsData, setSymbolsData] = useState<Record<string, CandlestickData[]>>({});
+  const [expressionData, setExpressionData] = useState<CandlestickData[]>([]);
+  const [selectedPlots, setSelectedPlots] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [precision, setPrecision] = useState(2);
 
   const onEvaluate = async () => {
     setLoading(true);
     try {
-      const result = await computeOHLCExpression(expression, '1d', fetchChartData);
-      setChartData(result);
+      const symbols = extractSymbols(expression);
+      const symbolsRawData = await fetchWithDelay(symbols, '1d', fetchChartData);
+
+      // Convert raw ChartData for each symbol into CandlestickData[]
+      const convertedSymbolsData: Record<string, CandlestickData[]> = {};
+      for (const sym of symbols) {
+        const d = symbolsRawData[sym];
+        if (!d) continue;
+        convertedSymbolsData[sym] = d.timestamp.map((time, i) => ({
+          time,
+          open: d.open[i],
+          high: d.high[i],
+          low: d.low[i],
+          close: d.close[i],
+        }));
+      }
+
+      setSymbolsData(convertedSymbolsData);
+
+      // Compute expression data
+      const exprData = await computeOHLCExpression(expression, '1d', fetchChartData);
+      setExpressionData(exprData);
+
+      // Default selected plots = all symbols + expression
+      setSelectedPlots([...symbols, 'expression']);
     } catch (err) {
       console.error('Evaluation failed:', err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const togglePlot = (plot: string) => {
+    setSelectedPlots((prev) =>
+      prev.includes(plot) ? prev.filter(p => p !== plot) : [...prev, plot]
+    );
   };
 
   return (
@@ -326,11 +336,37 @@ const ChartExpressionApp: React.FC = () => {
           ))}
         </select>
       </div>
-      {chartData.length > 0 && (
-      <div className="relative w-full h-[600px] md:h-[500px] rounded-lg border border-gray-200 shadow-md overflow-hidden">
-        <CandlestickChart data={chartData} precision={precision} />
-      </div>
+
+      {(Object.keys(symbolsData).length > 0 || expressionData.length > 0) && (
+        <div className="mb-4 flex flex-wrap gap-4">
+          {Object.keys(symbolsData).map((sym) => (
+            <label key={sym} className="inline-flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={selectedPlots.includes(sym)}
+                onChange={() => togglePlot(sym)}
+              />
+              <span>{sym}</span>
+            </label>
+          ))}
+          <label className="inline-flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={selectedPlots.includes('expression')}
+              onChange={() => togglePlot('expression')}
+            />
+            <span>Expression</span>
+          </label>
+        </div>
       )}
+
+      <div className="relative w-full h-[600px] md:h-[500px] rounded-lg border border-gray-200 shadow-md overflow-hidden">
+        <CandlestickChart
+          seriesData={{ ...symbolsData, expression: expressionData }}
+          selectedPlots={selectedPlots}
+          precision={precision}
+        />
+      </div>
     </div>
   );
 };
