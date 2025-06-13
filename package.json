@@ -10,7 +10,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "caniuse-lite": "^1.0.30001723",
     "date-fns": "^2.30.0",
     "lightweight-charts": "^5.0.0",
     "lodash": "^4.17.21",
