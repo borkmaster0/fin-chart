@@ -117,8 +117,9 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ dataMap, visibility
   const chartInstance = useRef<ReturnType<typeof createChart> | null>(null);
   const seriesMap = useRef<Record<string, ISeriesApi<'Candlestick'>>>({});
 
+  // Initialize chart only once
   useEffect(() => {
-    if (!chartRef.current) return;
+    if (!chartRef.current || chartInstance.current) return;
 
     const darkMode = localStorage.darkMode;
     const chart = createChart(chartRef.current, {
@@ -140,17 +141,12 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ dataMap, visibility
 
     chartInstance.current = chart;
 
-    for (const [key, data] of Object.entries(dataMap)) {
-      const series = chart.addSeries(CandlestickSeries, {
-        priceFormat: {
-          type: 'price',
-          precision: precision,
-          minMove: 1 / Math.pow(10, precision),
-        },
-      });
-      series.setData(data);
-      seriesMap.current[key] = series;
-    }
+    const observer = new ResizeObserver(() => {
+      if (chartRef.current) {
+        chart.resize(chartRef.current.clientWidth, chartRef.current.clientHeight);
+      }
+    });
+    observer.observe(chartRef.current);
 
     chart.subscribeCrosshairMove(param => {
       if (!param?.time || !param.seriesData) {
@@ -170,17 +166,44 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ dataMap, visibility
       onHover?.(null);
     });
 
-    const observer = new ResizeObserver(() => {
-      if (chartRef.current) {
-        chart.resize(chartRef.current.clientWidth, chartRef.current.clientHeight);
-      }
-    });
-    observer.observe(chartRef.current);
-
     return () => {
       observer.disconnect();
       chart.remove();
     };
+  }, [onHover, visibility]);
+
+  // Update series when dataMap or visibility changes
+  useEffect(() => {
+    if (!chartInstance.current) return;
+
+    const chart = chartInstance.current;
+
+    // Remove existing series not in new dataMap
+    for (const key of Object.keys(seriesMap.current)) {
+      if (!dataMap[key]) {
+        seriesMap.current[key].applyOptions({ visible: false });
+        delete seriesMap.current[key];
+      }
+    }
+
+    // Add or update series
+    for (const [key, data] of Object.entries(dataMap)) {
+      let series = seriesMap.current[key];
+
+      if (!series) {
+        series = chart.addSeries(CandlestickSeries, {
+          priceFormat: {
+            type: 'price',
+            precision: precision,
+            minMove: 1 / Math.pow(10, precision),
+          },
+        });
+        seriesMap.current[key] = series;
+      }
+
+      series.setData(data);
+      series.applyOptions({ visible: visibility[key] });
+    }
   }, [dataMap, visibility, precision]);
 
   return <div ref={chartRef} className="w-full h-full" />;
