@@ -195,12 +195,6 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ seriesData, selecte
         borderColor: darkMode ? '#334155' : '#E2E8F0',
         timeVisible: false,
         secondsVisible: false,
-      },
-      priceScaleId: 'right',
-      priceFormat: { 
-        type: 'price',
-        precision: precision,
-        minMove: 1 / Math.pow(10, precision)
       }
     });
 
