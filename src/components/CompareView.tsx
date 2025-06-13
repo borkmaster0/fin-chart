@@ -154,7 +154,7 @@ interface CandlestickChartProps {
   expressionTitle: string; // ⬅️ new
 }
 
-const CandlestickChart: React.FC<CandlestickChartProps> = ({ seriesData, selectedPlots, precision }) => {
+const CandlestickChart: React.FC<CandlestickChartProps> = ({ seriesData, selectedPlots, precision, expressionTitle }) => {
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<ReturnType<typeof createChart> | null>(null);
   const seriesRefs = useRef<Record<string, ISeriesApi<'Candlestick'>>>({});
