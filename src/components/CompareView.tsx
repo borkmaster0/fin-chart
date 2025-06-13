@@ -235,6 +235,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ seriesData, selecte
           borderVisible: true,
           wickVisible: true,
           priceLineVisible: false,
+          title: key
         });
         seriesRefs.current[key] = series;
       }
