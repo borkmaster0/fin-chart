@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { createChart, ColorType, CrosshairMode, ISeriesApi, CandlestickData, CandlestickSeries } from 'lightweight-charts';
+import { createChart, ISeriesApi, CandlestickSeries, ColorType, CrosshairMode } from 'lightweight-charts';
 import { evaluate } from 'mathjs';
-import { fetchChartData } from '../utils/api'; // Adjust path as needed
-import { Calculator, Loader2 } from 'lucide-react';
+import { fetchChartData } from '../utils/api';
+import { ChartData } from '../types';
+import { Calculator, Loader2 } from 'lucide-react'; // Lucide icons
 
 // === Types ===
 interface ChartData {
@@ -19,13 +20,14 @@ interface ChartData {
   };
 }
 
-type VisibilityMap = Record<string, boolean>;
-type ChartDataMap = Record<string, CandlestickData[]>;
-
-// === Utility Functions ===
+// === Helpers ===
 function extractSymbols(expression: string): string[] {
   const matches = expression.match(/\[([^\]]+)\]/g);
   return matches ? [...new Set(matches.map(m => m.slice(1, -1)))] : [];
+}
+
+function safeVarName(symbol: string, field: string): string {
+  return `${symbol.replace(/[^a-zA-Z0-9]/g, '_')}_${field}`;
 }
 
 async function fetchWithDelay(
@@ -34,6 +36,7 @@ async function fetchWithDelay(
   fetchChartData: (symbol: string, timeframe: string) => Promise<ChartData>
 ): Promise<Record<string, ChartData>> {
   const dataMap: Record<string, ChartData> = {};
+
   for (const symbol of symbols) {
     try {
       const data = await fetchChartData(symbol, timeframe);
@@ -41,8 +44,9 @@ async function fetchWithDelay(
     } catch (err) {
       console.error(`Failed to fetch data for ${symbol}:`, err);
     }
-    await new Promise(res => setTimeout(res, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000)); // ⏱️ 1-second delay
   }
+
   return dataMap;
 }
 
@@ -50,191 +54,199 @@ async function computeOHLCExpression(
   expression: string,
   timeframe: string,
   fetchChartData: (symbol: string, timeframe: string) => Promise<ChartData>
-): Promise<{ result: CandlestickData[]; rawData: ChartDataMap }> {
+): Promise<Record<string, CandlestickData[]>> {
   const symbols = extractSymbols(expression);
-  const raw = await fetchWithDelay(symbols, timeframe, fetchChartData);
+  const dataMap = await fetchWithDelay(symbols, timeframe, fetchChartData);
 
-  // Use the latest start timestamp as baseline
-  const validTimestamps: number[][] = symbols.map(s => raw[s]?.timestamp ?? []);
-  const startIndices = validTimestamps.map(arr => arr.findIndex(Boolean));
-  const latestStart = Math.max(...startIndices.map((i, idx) => validTimestamps[idx][i]));
+  // Find the symbol with the latest starting timestamp
+  const alignedSymbols = symbols.map((sym) => ({
+    symbol: sym,
+    timestamps: dataMap[sym]?.timestamp || [],
+  }));
+  const base = alignedSymbols.reduce((a, b) =>
+    a.timestamps[0] > b.timestamps[0] ? a : b
+  );
+  const baseTimestamps = base.timestamps;
 
-  const baseTimestamps = raw[symbols[0]].timestamp;
-  const result: CandlestickData[] = [];
+  const resultMap: Record<string, CandlestickData[]> = {};
 
+  // Raw symbol series
+  for (const symbol of symbols) {
+    const chartData: CandlestickData[] = [];
+    const ts = dataMap[symbol]?.timestamp || [];
+    for (let i = 0; i < ts.length; i++) {
+      chartData.push({
+        time: ts[i],
+        open: dataMap[symbol].open[i],
+        high: dataMap[symbol].high[i],
+        low: dataMap[symbol].low[i],
+        close: dataMap[symbol].close[i],
+      });
+    }
+    resultMap[symbol] = chartData;
+  }
+
+  // Computed expression series
+  const computed: CandlestickData[] = [];
   for (let i = 0; i < baseTimestamps.length; i++) {
-    if (baseTimestamps[i] < latestStart) continue;
-
     const scope: Record<string, number> = {};
     try {
-      for (const symbol of symbols) {
-        scope[`${symbol}_close`] = raw[symbol].close[i];
-        scope[`${symbol}_open`] = raw[symbol].open[i];
-        scope[`${symbol}_high`] = raw[symbol].high[i];
-        scope[`${symbol}_low`] = raw[symbol].low[i];
+      for (const sym of symbols) {
+        const idx = dataMap[sym].timestamp.indexOf(baseTimestamps[i]);
+        if (idx === -1) throw new Error(`Missing timestamp for ${sym}`);
+
+        scope[`${sym}_close`] = dataMap[sym].close[idx];
+        scope[`${sym}_open`] = dataMap[sym].open[idx];
+        scope[`${sym}_high`] = dataMap[sym].high[idx];
+        scope[`${sym}_low`] = dataMap[sym].low[idx];
       }
 
       const cleanExpr = (type: 'close' | 'open' | 'high' | 'low') =>
         expression.replace(/\[([^\]]+)]/g, (_, sym) => `${sym}_${type}`);
 
-      result.push({
+      const close = evaluate(cleanExpr('close'), scope);
+      const open = evaluate(cleanExpr('open'), scope);
+      const high = evaluate(cleanExpr('high'), scope);
+      const low = evaluate(cleanExpr('low'), scope);
+
+      computed.push({
         time: baseTimestamps[i],
-        open: evaluate(cleanExpr('open'), scope),
-        high: evaluate(cleanExpr('high'), scope),
-        low: evaluate(cleanExpr('low'), scope),
-        close: evaluate(cleanExpr('close'), scope),
+        open,
+        high,
+        low,
+        close,
       });
     } catch (err) {
       console.warn(`Skipping index ${i} due to error`, err);
     }
   }
 
-  const chartDataMap: ChartDataMap = Object.fromEntries(
-    symbols.map(symbol =>
-      [symbol, raw[symbol].timestamp.map((t, i) => ({
-        time: t,
-        open: raw[symbol].open[i],
-        high: raw[symbol].high[i],
-        low: raw[symbol].low[i],
-        close: raw[symbol].close[i],
-      }))]
-    )
-  );
-
-  return { result, rawData: chartDataMap };
+  resultMap['Expression'] = computed;
+  return resultMap;
 }
 
-// === Chart Component ===
+// === Chart Rendering ===
 interface CandlestickChartProps {
-  dataMap: ChartDataMap;
-  visibility: VisibilityMap;
+  data: CandlestickData[];
   precision: number;
-  onHover?: (values: CandlestickData | null) => void;
 }
 
-const CandlestickChart: React.FC<CandlestickChartProps> = ({ dataMap, visibility, precision, onHover }) => {
+interface CandlestickChartProps {
+  dataMap: Record<string, CandlestickData[]>;
+  visibility: Record<string, boolean>;
+  precision: number;
+}
+
+const CandlestickChart: React.FC<CandlestickChartProps> = ({ dataMap, visibility, precision }) => {
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<ReturnType<typeof createChart> | null>(null);
-  const seriesMap = useRef<Record<string, ISeriesApi<'Candlestick'>>>({});
+  const seriesRefs = useRef<Record<string, ISeriesApi<'Candlestick'>>>({});
+  const [hoveredValues, setHoveredValues] = useState<any>(null);
 
-  // Initialize chart only once
   useEffect(() => {
-    if (!chartRef.current || chartInstance.current) return;
-  
-    const width = chartRef.current.clientWidth;
-    const height = chartRef.current.clientHeight;
-  
+    if (!chartRef.current) return;
+
+    const container = chartRef.current;
     const darkMode = localStorage.darkMode;
-    const chart = createChart(chartRef.current, {
-      width,
-      height,
+    const chart = createChart(container, {
+      width: container.clientWidth,
+      height: 500,
       layout: {
         background: { type: ColorType.Solid, color: darkMode ? '#1E293B' : '#FFFFFF' },
         textColor: darkMode ? '#E2E8F0' : '#334155',
       },
       grid: {
-        vertLines: { color: 'rgba(197,203,206,0.3)' },
-        horzLines: { color: 'rgba(197,203,206,0.3)' },
+        vertLines: { color: 'rgba(197, 203, 206, 0.2)' },
+        horzLines: { color: 'rgba(197, 203, 206, 0.2)' },
       },
-      crosshair: {
-        mode: CrosshairMode.Normal,
-      },
+      rightPriceScale: { borderColor: '#D1D5DB' },
+      crosshair: { mode: CrosshairMode.Normal },
       timeScale: {
+        borderColor: darkMode ? '#334155' : '#E2E8F0',
         timeVisible: true,
+        secondsVisible: false,
       },
     });
-  
+
     chartInstance.current = chart;
-  
-    const observer = new ResizeObserver(() => {
-      if (chartRef.current) {
-        chart.resize(chartRef.current.clientWidth, chartRef.current.clientHeight);
-      }
+
+    const resizeObserver = new ResizeObserver(() => {
+      chart.resize(container.clientWidth, container.clientHeight);
     });
-    observer.observe(chartRef.current);
-  
-    chart.subscribeCrosshairMove(param => {
-      if (!param?.time || !param.seriesData) {
-        onHover?.(null);
-        return;
-      }
-  
-      for (const [key, series] of Object.entries(seriesMap.current)) {
-        if (visibility[key]) {
-          const data = param.seriesData.get(series);
-          if (data) {
-            onHover?.(data as CandlestickData);
-            return;
-          }
-        }
-      }
-      onHover?.(null);
-    });
-  
+
+    resizeObserver.observe(container);
+
     return () => {
-      observer.disconnect();
       chart.remove();
+      resizeObserver.disconnect();
     };
-  }, [onHover, visibility]);
+  }, []);
 
-
-  // Update series when dataMap or visibility changes
   useEffect(() => {
-    if (!chartInstance.current) return;
-
     const chart = chartInstance.current;
+    if (!chart) return;
 
-    // Remove existing series not in new dataMap
-    for (const key of Object.keys(seriesMap.current)) {
-      if (!dataMap[key]) {
-        seriesMap.current[key].applyOptions({ visible: false });
-        delete seriesMap.current[key];
-      }
-    }
+    // Clear old series
+    Object.values(seriesRefs.current).forEach(series => chart.removeSeries(series));
+    seriesRefs.current = {};
 
-    // Add or update series
-    for (const [key, data] of Object.entries(dataMap)) {
-      let series = seriesMap.current[key];
-
-      if (!series) {
-        series = chart.addSeries(CandlestickSeries, {
-          priceFormat: {
-            type: 'price',
-            precision: precision,
-            minMove: 1 / Math.pow(10, precision),
-          },
-        });
-        seriesMap.current[key] = series;
-      }
-
+    Object.entries(dataMap).forEach(([key, data], idx) => {
+      const color = key === 'Expression' ? '#3B82F6' : ['#EF4444', '#10B981', '#F59E0B'][idx % 3];
+      const series = chart.addCandlestickSeries({
+        priceScaleId: 'right',
+        priceFormat: {
+          type: 'price',
+          precision: precision,
+          minMove: 1 / Math.pow(10, precision),
+        },
+        upColor: color,
+        downColor: color,
+        borderVisible: false,
+        wickUpColor: color,
+        wickDownColor: color,
+        visible: visibility[key],
+      });
       series.setData(data);
-      series.applyOptions({ visible: visibility[key] });
-    }
+      seriesRefs.current[key] = series;
+    });
+
+    chartInstance.current?.subscribeCrosshairMove(param => {
+      if (!param?.time || !param.seriesData) return setHoveredValues(null);
+      const expressionSeries = seriesRefs.current["Expression"];
+      const hovered = param.seriesData.get(expressionSeries) as CandlestickData;
+      if (hovered) {
+        setHoveredValues(hovered);
+      }
+    });
   }, [dataMap, visibility, precision]);
 
-  return <div ref={chartRef} className="w-full h-full" />;
+  return (
+    <div ref={chartRef} className="relative w-full h-full">
+      {hoveredValues && (
+        <div className="absolute top-2 right-4 bg-white dark:bg-slate-800 text-sm shadow-md border border-gray-200 dark:border-gray-700 rounded px-3 py-2 z-10">
+          <div>O: <span className="text-blue-500">{hoveredValues.open?.toFixed(precision)}</span></div>
+          <div>H: <span className="text-green-500">{hoveredValues.high?.toFixed(precision)}</span></div>
+          <div>L: <span className="text-red-500">{hoveredValues.low?.toFixed(precision)}</span></div>
+          <div>C: <span className="text-purple-500">{hoveredValues.close?.toFixed(precision)}</span></div>
+        </div>
+      )}
+    </div>
+  );
 };
 
 // === Main App ===
 const ChartExpressionApp: React.FC = () => {
-  const [expression, setExpression] = useState('[SPY] / [QQQ]');
-  const [chartDataMap, setChartDataMap] = useState<ChartDataMap>({});
+  const [expression, setExpression] = useState('([SPY] + [QQQ]) / 2');
+  const [chartDataMap, setChartDataMap] = useState<Record<string, CandlestickData[]>>({});
+const [visibility, setVisibility] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
   const [precision, setPrecision] = useState(2);
-  const [hovered, setHovered] = useState<CandlestickData | null>(null);
-  const [visibility, setVisibility] = useState<VisibilityMap>({});
 
   const onEvaluate = async () => {
     setLoading(true);
     try {
-      const { result, rawData } = await computeOHLCExpression(expression, '1d', fetchChartData);
-      const allSeries: ChartDataMap = {
-        ...rawData,
-        [expression]: result,
-      };
-
-      setChartDataMap(allSeries);
-      setVisibility(Object.fromEntries(Object.keys(allSeries).map(k => [k, k === expression])));
+      const result = await computeOHLCExpression(expression, '1d', fetchChartData);
+      setChartData(result);
     } catch (err) {
       console.error('Evaluation failed:', err);
     } finally {
@@ -243,13 +255,13 @@ const ChartExpressionApp: React.FC = () => {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
+    <div className="max-w-4xl mx-auto px-4 py-8">
       <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
         <Calculator className="w-6 h-6 text-blue-500" />
         Expression Chart
       </h2>
 
-      <div className="flex flex-col md:flex-row items-center gap-4 mb-4">
+      <div className="flex flex-col md:flex-row items-center gap-4 mb-6">
         <input
           value={expression}
           onChange={(e) => setExpression(e.target.value)}
@@ -261,54 +273,31 @@ const ChartExpressionApp: React.FC = () => {
           disabled={loading}
           className="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition disabled:opacity-50"
         >
-          {loading ? <><Loader2 className="animate-spin mr-2 w-4 h-4" />Computing...</> : 'Evaluate'}
+          {loading ? (
+            <>
+              <Loader2 className="animate-spin mr-2 w-4 h-4" />
+              Computing...
+            </>
+          ) : (
+            'Evaluate'
+          )}
         </button>
         <select
           value={precision}
           onChange={(e) => setPrecision(Number(e.target.value))}
           className="text-sm border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 bg-white dark:bg-slate-800"
         >
-          {Array.from({ length: 10 }, (_, i) => i).map(p => (
+          {Array.from({ length: 10 }, (_, i) => i).map((p) => (
             <option key={p} value={p}>
               {p === 0 ? 'No decimals' : `${p} decimal${p > 1 ? 's' : ''}`}
             </option>
           ))}
         </select>
       </div>
-
-      {/* Visibility Toggle */}
-      {Object.keys(chartDataMap).length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-4">
-          {Object.keys(chartDataMap).map((key) => (
-            <label key={key} className="flex items-center gap-1 text-sm">
-              <input
-                type="checkbox"
-                checked={visibility[key]}
-                onChange={() => setVisibility(prev => ({ ...prev, [key]: !prev[key] }))}
-              />
-              {key === expression ? <span className="font-semibold text-blue-600">[Expression]</span> : key}
-            </label>
-          ))}
-        </div>
-      )}
-
-      {Object.keys(chartDataMap).length > 0 && (
-        <div className="relative w-full h-[600px] rounded-lg border border-gray-200 shadow-md overflow-hidden">
-          {hovered && (
-            <div className="absolute top-2 right-4 bg-white dark:bg-slate-800 text-sm shadow-md border border-gray-200 dark:border-gray-700 rounded px-3 py-2 z-10">
-              <div className="font-semibold text-gray-700 dark:text-gray-200">O: <span className="text-blue-500">{hovered.open?.toFixed(precision)}</span></div>
-              <div className="font-semibold text-gray-700 dark:text-gray-200">H: <span className="text-green-500">{hovered.high?.toFixed(precision)}</span></div>
-              <div className="font-semibold text-gray-700 dark:text-gray-200">L: <span className="text-red-500">{hovered.low?.toFixed(precision)}</span></div>
-              <div className="font-semibold text-gray-700 dark:text-gray-200">C: <span className="text-purple-500">{hovered.close?.toFixed(precision)}</span></div>
-            </div>
-          )}
-          <CandlestickChart
-            dataMap={Object.fromEntries(Object.entries(chartDataMap).filter(([key]) => visibility[key]))}
-            visibility={visibility}
-            precision={precision}
-            onHover={setHovered}
-          />
-        </div>
+      {chartData.length > 0 && (
+      <div className="relative w-full h-[600px] md:h-[500px] rounded-lg border border-gray-200 shadow-md overflow-hidden">
+        <CandlestickChart data={chartData} precision={precision} />
+      </div>
       )}
     </div>
   );
