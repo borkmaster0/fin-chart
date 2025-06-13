@@ -229,7 +229,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ seriesData, selecte
 
       if (!seriesRefs.current[key]) {
         const color = colors[idx % colors.length];
-        const series = chartInstance.current.addSeries(CandlestickSeries, {
+        const series = chartInstance.current.addCandlestickSeries({
           upColor: color,
           downColor: color,
           borderVisible: true,
@@ -246,54 +246,47 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ seriesData, selecte
   return <div ref={chartRef} className="relative w-full h-full" />;
 };
 
+// === Chart Legend ===
+const Legend: React.FC<{ selectedPlots: string[]; colors: string[] }> = ({ selectedPlots, colors }) => {
+  return (
+    <div className="flex justify-start items-center gap-4 mt-4">
+      {selectedPlots.map((plot, idx) => (
+        <div key={plot} className="flex items-center gap-2">
+          <div
+            style={{ backgroundColor: colors[idx % colors.length] }}
+            className="w-4 h-4 rounded-full"
+          />
+          <span className="text-sm text-gray-700 dark:text-gray-300">{plot}</span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 // === Main App ===
 const ChartExpressionApp: React.FC = () => {
   const [expression, setExpression] = useState('([SPY] + [QQQ]) / 2');
-  const [symbolsData, setSymbolsData] = useState<Record<string, CandlestickData[]>>({});
-  const [expressionData, setExpressionData] = useState<CandlestickData[]>([]);
-  const [selectedPlots, setSelectedPlots] = useState<string[]>([]);
+  const [chartData, setChartData] = useState<CandlestickData[]>([]);
   const [loading, setLoading] = useState(false);
   const [precision, setPrecision] = useState(2);
+  const [selectedPlots, setSelectedPlots] = useState<string[]>([]);
+  const [symbolsData, setSymbolsData] = useState<Record<string, CandlestickData[]>>({});
 
   const onEvaluate = async () => {
     setLoading(true);
     try {
-      const symbols = extractSymbols(expression);
-      const symbolsRawData = await fetchWithDelay(symbols, '1d', fetchChartData);
-
-      // Convert raw ChartData for each symbol into CandlestickData[]
-      const convertedSymbolsData: Record<string, CandlestickData[]> = {};
-      for (const sym of symbols) {
-        const d = symbolsRawData[sym];
-        if (!d) continue;
-        convertedSymbolsData[sym] = d.timestamp.map((time, i) => ({
-          time,
-          open: d.open[i],
-          high: d.high[i],
-          low: d.low[i],
-          close: d.close[i],
-        }));
-      }
-
-      setSymbolsData(convertedSymbolsData);
-
-      // Compute expression data
-      const exprData = await computeOHLCExpression(expression, '1d', fetchChartData);
-      setExpressionData(exprData);
-
-      // Default selected plots = all symbols + expression
-      setSelectedPlots([...symbols, 'expression']);
+      const result = await computeOHLCExpression(expression, '1d', fetchChartData);
+      setChartData(result);
+      setSymbolsData({
+        ...symbolsData,
+        expression: result,
+      });
+      setSelectedPlots([...extractSymbols(expression), 'expression']);
     } catch (err) {
       console.error('Evaluation failed:', err);
     } finally {
       setLoading(false);
     }
-  };
-
-  const togglePlot = (plot: string) => {
-    setSelectedPlots((prev) =>
-      prev.includes(plot) ? prev.filter(p => p !== plot) : [...prev, plot]
-    );
   };
 
   return (
@@ -337,36 +330,20 @@ const ChartExpressionApp: React.FC = () => {
         </select>
       </div>
 
-      {(Object.keys(symbolsData).length > 0 || expressionData.length > 0) && (
-        <div className="mb-4 flex flex-wrap gap-4">
-          {Object.keys(symbolsData).map((sym) => (
-            <label key={sym} className="inline-flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={selectedPlots.includes(sym)}
-                onChange={() => togglePlot(sym)}
-              />
-              <span>{sym}</span>
-            </label>
-          ))}
-          <label className="inline-flex items-center space-x-2">
-            <input
-              type="checkbox"
-              checked={selectedPlots.includes('expression')}
-              onChange={() => togglePlot('expression')}
+      {chartData.length > 0 && (
+        <>
+          <div className="relative w-full h-[600px] md:h-[500px] rounded-lg border border-gray-200 shadow-md overflow-hidden">
+            <CandlestickChart
+              seriesData={{ ...symbolsData, expression: chartData }}
+              selectedPlots={selectedPlots}
+              precision={precision}
             />
-            <span>Expression</span>
-          </label>
-        </div>
-      )}
+          </div>
 
-      <div className="relative w-full h-[600px] md:h-[500px] rounded-lg border border-gray-200 shadow-md overflow-hidden">
-        <CandlestickChart
-          seriesData={{ ...symbolsData, expression: expressionData }}
-          selectedPlots={selectedPlots}
-          precision={precision}
-        />
-      </div>
+          {/* Chart Legend */}
+          <Legend selectedPlots={selectedPlots} colors={colors} />
+        </>
+      )}
     </div>
   );
 };
