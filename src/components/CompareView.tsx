@@ -229,7 +229,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ seriesData, selecte
 
       if (!seriesRefs.current[key]) {
         const color = colors[idx % colors.length];
-        const series = chartInstance.current.addCandlestickSeries({
+        const series = chartInstance.current.addSeries(CandlestickSeries, {
           upColor: color,
           downColor: color,
           borderVisible: true,
