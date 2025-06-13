@@ -151,6 +151,7 @@ interface CandlestickChartProps {
   seriesData: Record<string, CandlestickData[]>;
   selectedPlots: string[];
   precision: number;
+  expressionTitle: string; // ⬅️ new
 }
 
 const CandlestickChart: React.FC<CandlestickChartProps> = ({ seriesData, selectedPlots, precision }) => {
@@ -267,7 +268,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ seriesData, selecte
           borderVisible: true,
           wickVisible: true,
           priceLineVisible: false,
-          title: key,      
+          title: key === 'expression' ? expressionTitle : key,
           priceScaleId: 'right',
           priceFormat: { 
             type: 'price',
@@ -425,6 +426,7 @@ const ChartExpressionApp: React.FC = () => {
           seriesData={{ ...symbolsData, expression: expressionData }}
           selectedPlots={selectedPlots}
           precision={precision}
+          expressionTitle={expression}
         />
       </div>
     </div>
