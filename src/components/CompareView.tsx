@@ -288,7 +288,8 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ seriesData, selecte
     }
   }, [data, hoveredValues]);
 
-  return {
+  return (
+  <div className="relative w-full h-full">
     {hoveredValues && (
       <div className="absolute top-2 left-4 bg-white dark:bg-slate-800 text-sm shadow-md border border-gray-200 dark:border-gray-700 rounded px-3 py-2 z-10 space-y-1">
         {Object.entries(hoveredValues.values).map(([key, val]) => (
@@ -304,8 +305,9 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ seriesData, selecte
         ))}
       </div>
     )}
-    <div ref={chartRef} className="relative w-full h-full" />
-  };
+    <div ref={chartRef} className="w-full h-full" />
+  </div>
+  );
 };
 
 // === Main App ===
