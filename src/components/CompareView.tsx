@@ -153,8 +153,6 @@ interface CandlestickChartProps {
   precision: number;
 }
 
-const colors = ['#2196F3', '#4CAF50', '#F44336', '#FF9800', '#9C27B0', '#009688', '#673AB7'];
-
 const CandlestickChart: React.FC<CandlestickChartProps> = ({ seriesData, selectedPlots, precision }) => {
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<ReturnType<typeof createChart> | null>(null);
@@ -228,10 +226,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ seriesData, selecte
       if (!data) return;
 
       if (!seriesRefs.current[key]) {
-        const color = colors[idx % colors.length];
         const series = chartInstance.current.addSeries(CandlestickSeries, {
-          upColor: color,
-          downColor: color,
           borderVisible: true,
           wickVisible: true,
           priceLineVisible: false,
