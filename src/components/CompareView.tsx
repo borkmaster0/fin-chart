@@ -281,7 +281,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ seriesData, selecte
 
       seriesRefs.current[key].setData(data);
     });
-  }, [seriesData, selectedPlots]);
+  }, [seriesData, selectedPlots, expressionTitle, precision]);
 
   return (
   <div className="relative w-full h-full">
