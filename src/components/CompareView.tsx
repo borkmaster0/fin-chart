@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { createChart, ColorType, CrosshairMode, ISeriesApi, CandlestickData } from 'lightweight-charts';
+import { createChart, ColorType, CrosshairMode, ISeriesApi, CandlestickData, CandlestickSeries } from 'lightweight-charts';
 import { evaluate } from 'mathjs';
 import { fetchChartData } from '../utils/api'; // Adjust path as needed
 import { Calculator, Loader2 } from 'lucide-react';
@@ -141,7 +141,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ dataMap, visibility
     chartInstance.current = chart;
 
     for (const [key, data] of Object.entries(dataMap)) {
-      const series = chart.addCandlestickSeries({
+      const series = chart.addSeries(CandlestickSeries, {
         priceFormat: {
           type: 'price',
           precision: precision,
