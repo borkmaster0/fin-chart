@@ -120,9 +120,14 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ dataMap, visibility
   // Initialize chart only once
   useEffect(() => {
     if (!chartRef.current || chartInstance.current) return;
-
+  
+    const width = chartRef.current.clientWidth;
+    const height = chartRef.current.clientHeight;
+  
     const darkMode = localStorage.darkMode;
     const chart = createChart(chartRef.current, {
+      width,
+      height,
       layout: {
         background: { type: ColorType.Solid, color: darkMode ? '#1E293B' : '#FFFFFF' },
         textColor: darkMode ? '#E2E8F0' : '#334155',
@@ -138,22 +143,22 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ dataMap, visibility
         timeVisible: true,
       },
     });
-
+  
     chartInstance.current = chart;
-
+  
     const observer = new ResizeObserver(() => {
       if (chartRef.current) {
         chart.resize(chartRef.current.clientWidth, chartRef.current.clientHeight);
       }
     });
     observer.observe(chartRef.current);
-
+  
     chart.subscribeCrosshairMove(param => {
       if (!param?.time || !param.seriesData) {
         onHover?.(null);
         return;
       }
-
+  
       for (const [key, series] of Object.entries(seriesMap.current)) {
         if (visibility[key]) {
           const data = param.seriesData.get(series);
@@ -165,12 +170,13 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ dataMap, visibility
       }
       onHover?.(null);
     });
-
+  
     return () => {
       observer.disconnect();
       chart.remove();
     };
   }, [onHover, visibility]);
+
 
   // Update series when dataMap or visibility changes
   useEffect(() => {
