@@ -243,9 +243,28 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data, precision }) 
     if (seriesRef.current) {
       seriesRef.current.setData(data);
     }
-  }, [data, hoveredValues]);
+  }, [data]);
 
-  return <div ref={chartRef} className="w-full h-full" />;
+  return (
+    <div ref={chartRef} className="relative w-full h-full">
+      {hoveredValues && (
+        <div className="absolute top-2 right-4 bg-white dark:bg-slate-800 text-sm shadow-md border border-gray-200 dark:border-gray-700 rounded px-3 py-2 z-10">
+          <div className="font-semibold text-gray-700 dark:text-gray-200">
+            O: <span className="text-blue-500">{hoveredValues.open?.toFixed(precision)}</span>
+          </div>
+          <div className="font-semibold text-gray-700 dark:text-gray-200">
+            H: <span className="text-green-500">{hoveredValues.high?.toFixed(precision)}</span>
+          </div>
+          <div className="font-semibold text-gray-700 dark:text-gray-200">
+            L: <span className="text-red-500">{hoveredValues.low?.toFixed(precision)}</span>
+          </div>
+          <div className="font-semibold text-gray-700 dark:text-gray-200">
+            C: <span className="text-purple-500">{hoveredValues.close?.toFixed(precision)}</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
 
 // === Main App ===
