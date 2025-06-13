@@ -250,7 +250,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data, precision }) 
       {hoveredValues && (
         <div className="absolute top-2 left-4 bg-white dark:bg-slate-800 text-sm shadow-md border border-gray-200 dark:border-gray-700 rounded px-3 py-2 z-10">
           <div className="font-semibold text-gray-700 dark:text-gray-200">
-            <span className="text-blue-500">{hoveredValues.time}</span>
+            <span className="text-blue-500">{new Date(hoveredValues.time)}</span>
           </div>
           <div className="font-semibold text-gray-700 dark:text-gray-200">
             O: <span className="text-blue-500">{hoveredValues.open?.toFixed(precision)}</span>
