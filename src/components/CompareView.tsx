@@ -243,7 +243,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data, precision }) 
     if (seriesRef.current) {
       seriesRef.current.setData(data);
     }
-  }, [data]);
+  }, [data, hoveredValues]);
 
   return <div ref={chartRef} className="w-full h-full" />;
 };
