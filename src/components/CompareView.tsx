@@ -196,6 +196,12 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ seriesData, selecte
         timeVisible: false,
         secondsVisible: false,
       },
+      priceScaleId: 'right',
+      priceFormat: { 
+        type: 'price',
+        precision: precision,
+        minMove: 1 / Math.pow(10, precision)
+      }
     });
 
     chartInstance.current = chart;
