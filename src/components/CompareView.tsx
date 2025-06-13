@@ -230,7 +230,13 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ seriesData, selecte
           borderVisible: true,
           wickVisible: true,
           priceLineVisible: false,
-          title: key
+          title: key,      
+          priceScaleId: 'right',
+          priceFormat: { 
+            type: 'price',
+            precision: precision,
+            minMove: 1 / Math.pow(10, precision)
+          }
         });
         seriesRefs.current[key] = series;
       }
