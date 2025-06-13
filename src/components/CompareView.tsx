@@ -222,8 +222,12 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ seriesData, selecte
     // Remove series that are no longer selected
     for (const key of Object.keys(seriesRefs.current)) {
       if (!selectedPlots.includes(key)) {
-        chartInstance.current.removeSeries(seriesRefs.current[key]);
-        delete seriesRefs.current[key];
+        try {
+          chartInstance.current.removeSeries(seriesRefs.current[key]);
+          delete seriesRefs.current[key];
+        } catch (error) {
+          console.error(error);
+        }
       }
     }
 
