@@ -237,8 +237,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ dataMap, visibility
 // === Main App ===
 const ChartExpressionApp: React.FC = () => {
   const [expression, setExpression] = useState('([SPY] + [QQQ]) / 2');
-  const [chartDataMap, setChartDataMap] = useState<Record<string, CandlestickData[]>>({});
-const [visibility, setVisibility] = useState<Record<string, boolean>>({});
+  const [chartData, setChartData] = useState<CandlestickData[]>([]);
   const [loading, setLoading] = useState(false);
   const [precision, setPrecision] = useState(2);
 
