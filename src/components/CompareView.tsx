@@ -288,7 +288,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ seriesData, selecte
     {hoveredValues && (
       <div className="absolute top-2 left-4 bg-white dark:bg-slate-800 text-sm shadow-md border border-gray-200 dark:border-gray-700 rounded px-3 py-2 z-10 space-y-1">
         {Object.entries(hoveredValues.values).map(([key, val]) => (
-          <div key={key}>
+          <div key={key === 'expression' ? expressionTitle : key}>
             <div className="font-semibold text-gray-700 dark:text-gray-200">{key}</div>
             <div className="flex gap-2 text-xs">
               <span className="text-blue-500">O: {val.open?.toFixed(precision)}</span>
