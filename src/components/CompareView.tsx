@@ -153,6 +153,13 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data, precision }) 
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<ReturnType<typeof createChart> | null>(null);
   const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
+  const [hoveredValues, setHoveredValues] = useState<{
+    time?: number;
+    open?: number;
+    high?: number;
+    low?: number;
+    close?: number;
+  } | null>(null);
 
   useEffect(() => {
     if (!chartRef.current) return;
@@ -196,6 +203,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data, precision }) 
         minMove: 1 / Math.pow(10, precision)
       }
     });
+    
     series.setData(data);
     chartInstance.current = chart;
     seriesRef.current = series;
@@ -209,6 +217,21 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data, precision }) 
     });
 
     resizeObserver.observe(container);
+
+    chart.subscribeCrosshairMove(param => {
+      if (!param?.time || !param.seriesData) {
+        setHoveredValues(null);
+        return;
+      }
+    
+      const seriesData = param.seriesData.get(series);
+      if (seriesData) {
+        const { open, high, low, close } = seriesData as CandlestickData;
+        setHoveredValues({ time: param.time as number, open, high, low, close });
+      } else {
+        setHoveredValues(null);
+      }
+    });
 
     return () => {
       resizeObserver.disconnect();
@@ -286,6 +309,14 @@ const ChartExpressionApp: React.FC = () => {
       </div>
       {chartData.length > 0 && (
       <div className="relative w-full h-[600px] md:h-[500px] rounded-lg border border-gray-200 shadow-md overflow-hidden">
+        {hoveredValues && (
+        <div className="absolute top-2 right-4 bg-white dark:bg-slate-800 text-sm shadow-md border border-gray-200 dark:border-gray-700 rounded px-3 py-2 z-10">
+          <div className="font-semibold text-gray-700 dark:text-gray-200">O: <span className="text-blue-500">{hoveredValues.open?.toFixed(precision)}</span></div>
+          <div className="font-semibold text-gray-700 dark:text-gray-200">H: <span className="text-green-500">{hoveredValues.high?.toFixed(precision)}</span></div>
+          <div className="font-semibold text-gray-700 dark:text-gray-200">L: <span className="text-red-500">{hoveredValues.low?.toFixed(precision)}</span></div>
+          <div className="font-semibold text-gray-700 dark:text-gray-200">C: <span className="text-purple-500">{hoveredValues.close?.toFixed(precision)}</span></div>
+        </div>
+        )}
         <CandlestickChart data={chartData} precision={precision} />
       </div>
       )}
