@@ -54,76 +54,94 @@ async function computeOHLCExpression(
   expression: string,
   timeframe: string,
   fetchChartData: (symbol: string, timeframe: string) => Promise<ChartData>
-): Promise<Record<string, CandlestickData[]>> {
+): Promise<CandlestickData[]> {
   const symbols = extractSymbols(expression);
   const dataMap = await fetchWithDelay(symbols, timeframe, fetchChartData);
 
-  // Find the symbol with the latest starting timestamp
-  const alignedSymbols = symbols.map((sym) => ({
-    symbol: sym,
-    timestamps: dataMap[sym]?.timestamp || [],
-  }));
-  const base = alignedSymbols.reduce((a, b) =>
-    a.timestamps[0] > b.timestamps[0] ? a : b
-  );
-  const baseTimestamps = base.timestamps;
-
-  const resultMap: Record<string, CandlestickData[]> = {};
-
-  // Raw symbol series
+  // 1. Convert timestamps into Sets for quick lookup
+  const symbolTimestamps: Record<string, Set<number>> = {};
   for (const symbol of symbols) {
-    const chartData: CandlestickData[] = [];
-    const ts = dataMap[symbol]?.timestamp || [];
-    for (let i = 0; i < ts.length; i++) {
-      chartData.push({
-        time: ts[i],
-        open: dataMap[symbol].open[i],
-        high: dataMap[symbol].high[i],
-        low: dataMap[symbol].low[i],
-        close: dataMap[symbol].close[i],
-      });
-    }
-    resultMap[symbol] = chartData;
+    symbolTimestamps[symbol] = new Set(dataMap[symbol].timestamp);
   }
 
-  // Computed expression series
-  const computed: CandlestickData[] = [];
-  for (let i = 0; i < baseTimestamps.length; i++) {
-    const scope: Record<string, number> = {};
-    try {
-      for (const sym of symbols) {
-        const idx = dataMap[sym].timestamp.indexOf(baseTimestamps[i]);
-        if (idx === -1) throw new Error(`Missing timestamp for ${sym}`);
+  // 2. Find shared timestamps by filtering the one with the latest starting point
+  function intersectSets(sets: Set<number>[]): number[] {
+    if (sets.length === 0) return [];
+  
+    const [first, ...rest] = sets;
+    const result: number[] = [];
+  
+    for (const t of first) {
+      if (rest.every(s => s.has(t))) {
+        result.push(t);
+      }
+    }
+  
+    return result.sort((a, b) => a - b); // ascending
+  }
+  
+  const timestampSets = symbols.map(sym => new Set(dataMap[sym].timestamp));
+  const alignedTimestamps = intersectSets(timestampSets);
 
-        scope[`${sym}_close`] = dataMap[sym].close[idx];
-        scope[`${sym}_open`] = dataMap[sym].open[idx];
-        scope[`${sym}_high`] = dataMap[sym].high[idx];
-        scope[`${sym}_low`] = dataMap[sym].low[idx];
+  const result: CandlestickData[] = [];
+
+  for (const time of alignedTimestamps) {
+    // Skip if any symbol doesn't have this timestamp
+    if (!symbols.every(sym => symbolTimestamps[sym].has(time))) continue;
+
+    const scope: Record<string, number> = {};
+    let skip = false;
+
+    for (const symbol of symbols) {
+      const index = dataMap[symbol].timestamp.indexOf(time);
+      if (index === -1) {
+        skip = true;
+        break;
       }
 
-      const cleanExpr = (type: 'close' | 'open' | 'high' | 'low') =>
-        expression.replace(/\[([^\]]+)]/g, (_, sym) => `${sym}_${type}`);
+      const d = dataMap[symbol];
+      const open = d.open[index];
+      const high = d.high[index];
+      const low = d.low[index];
+      const close = d.close[index];
 
-      const close = evaluate(cleanExpr('close'), scope);
-      const open = evaluate(cleanExpr('open'), scope);
-      const high = evaluate(cleanExpr('high'), scope);
-      const low = evaluate(cleanExpr('low'), scope);
+      if (
+        open == null ||
+        high == null ||
+        low == null ||
+        close == null
+      ) {
+        skip = true;
+        break;
+      }
 
-      computed.push({
-        time: baseTimestamps[i],
-        open,
-        high,
-        low,
-        close,
+      scope[safeVarName(symbol, 'open')] = open;
+      scope[safeVarName(symbol, 'high')] = high;
+      scope[safeVarName(symbol, 'low')] = low;
+      scope[safeVarName(symbol, 'close')] = close;
+    }
+
+    if (skip) continue;
+
+    const cleanExpr = (type: 'close' | 'open' | 'high' | 'low') =>
+      expression.replace(/\[([^\]]+)]/g, (_, s) => safeVarName(s, type));
+
+    try {
+      result.push({
+        time,
+        open: evaluate(cleanExpr('open'), scope),
+        high: evaluate(cleanExpr('high'), scope),
+        low: evaluate(cleanExpr('low'), scope),
+        close: evaluate(cleanExpr('close'), scope),
       });
     } catch (err) {
-      console.warn(`Skipping index ${i} due to error`, err);
+      console.warn(`Error evaluating expression at time ${time}:`, err);
     }
   }
-
-  resultMap['Expression'] = computed;
-  return resultMap;
+  
+  return result;
 }
+
 
 // === Chart Rendering ===
 interface CandlestickChartProps {
@@ -131,103 +149,118 @@ interface CandlestickChartProps {
   precision: number;
 }
 
-interface CandlestickChartProps {
-  dataMap: Record<string, CandlestickData[]>;
-  visibility: Record<string, boolean>;
-  precision: number;
-}
-
-const CandlestickChart: React.FC<CandlestickChartProps> = ({ dataMap, visibility, precision }) => {
+const CandlestickChart: React.FC<CandlestickChartProps> = ({ data, precision }) => {
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<ReturnType<typeof createChart> | null>(null);
-  const seriesRefs = useRef<Record<string, ISeriesApi<'Candlestick'>>>({});
-  const [hoveredValues, setHoveredValues] = useState<any>(null);
+  const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
+  const [hoveredValues, setHoveredValues] = useState<{
+    time?: number;
+    open?: number;
+    high?: number;
+    low?: number;
+    close?: number;
+  } | null>(null);
 
   useEffect(() => {
     if (!chartRef.current) return;
-
-    const container = chartRef.current;
     const darkMode = localStorage.darkMode;
-    const chart = createChart(container, {
-      width: container.clientWidth,
-      height: 500,
+    const container = chartRef.current;  
+    const chart = createChart(chartRef.current, {
+      width: 700, 
+      height: 400
+    });
+    const series = chart.addSeries(CandlestickSeries, {
       layout: {
         background: { type: ColorType.Solid, color: darkMode ? '#1E293B' : '#FFFFFF' },
         textColor: darkMode ? '#E2E8F0' : '#334155',
       },
+      width: chartRef.current.clientWidth,
+      height: 500,
       grid: {
-        vertLines: { color: 'rgba(197, 203, 206, 0.2)' },
-        horzLines: { color: 'rgba(197, 203, 206, 0.2)' },
+        vertLines: {
+          color: darkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.06)',
+        },
+        horzLines: {
+          color: darkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.06)',
+        },
       },
-      rightPriceScale: { borderColor: '#D1D5DB' },
-      crosshair: { mode: CrosshairMode.Normal },
+      rightPriceScale: {
+        borderColor: darkMode ? '#334155' : '#E2E8F0',
+        borderVisible: true
+      },
+      crosshair: {
+        mode: CrosshairMode.Normal
+      },
       timeScale: {
         borderColor: darkMode ? '#334155' : '#E2E8F0',
-        timeVisible: true,
+        timeVisible: false,
         secondsVisible: false,
       },
+      priceScaleId: 'right',
+      priceFormat: { 
+        type: 'price',
+        precision: precision,
+        minMove: 1 / Math.pow(10, precision)
+      }
     });
-
+    
+    series.setData(data);
     chartInstance.current = chart;
+    seriesRef.current = series;
 
-    const resizeObserver = new ResizeObserver(() => {
-      chart.resize(container.clientWidth, container.clientHeight);
+    const resizeObserver = new ResizeObserver(entries => {
+      for (let entry of entries) {
+        if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
+          chart.resize(entry.contentRect.width, entry.contentRect.height);
+        }
+      }
     });
 
     resizeObserver.observe(container);
 
-    return () => {
-      chart.remove();
-      resizeObserver.disconnect();
-    };
-  }, []);
-
-  useEffect(() => {
-    const chart = chartInstance.current;
-    if (!chart) return;
-
-    // Clear old series
-    Object.values(seriesRefs.current).forEach(series => chart.removeSeries(series));
-    seriesRefs.current = {};
-
-    Object.entries(dataMap).forEach(([key, data], idx) => {
-      const color = key === 'Expression' ? '#3B82F6' : ['#EF4444', '#10B981', '#F59E0B'][idx % 3];
-      const series = chart.addCandlestickSeries({
-        priceScaleId: 'right',
-        priceFormat: {
-          type: 'price',
-          precision: precision,
-          minMove: 1 / Math.pow(10, precision),
-        },
-        upColor: color,
-        downColor: color,
-        borderVisible: false,
-        wickUpColor: color,
-        wickDownColor: color,
-        visible: visibility[key],
-      });
-      series.setData(data);
-      seriesRefs.current[key] = series;
-    });
-
-    chartInstance.current?.subscribeCrosshairMove(param => {
-      if (!param?.time || !param.seriesData) return setHoveredValues(null);
-      const expressionSeries = seriesRefs.current["Expression"];
-      const hovered = param.seriesData.get(expressionSeries) as CandlestickData;
-      if (hovered) {
-        setHoveredValues(hovered);
+    chart.subscribeCrosshairMove(param => {
+      if (!param?.time || !param.seriesData) {
+        setHoveredValues(null);
+        return;
+      }
+    
+      const seriesData = param.seriesData.get(series);
+      if (seriesData) {
+        const { open, high, low, close } = seriesData as CandlestickData;
+        setHoveredValues({ time: param.time as number, open, high, low, close });
+      } else {
+        setHoveredValues(null);
       }
     });
-  }, [dataMap, visibility, precision]);
+
+    return () => {
+      resizeObserver.disconnect();
+      chart.remove();
+    };
+  }, [precision]);
+
+  useEffect(() => {
+    if (seriesRef.current) {
+      seriesRef.current.setData(data);
+    }
+  }, [data]);
 
   return (
     <div ref={chartRef} className="relative w-full h-full">
       {hoveredValues && (
-        <div className="absolute top-2 right-4 bg-white dark:bg-slate-800 text-sm shadow-md border border-gray-200 dark:border-gray-700 rounded px-3 py-2 z-10">
-          <div>O: <span className="text-blue-500">{hoveredValues.open?.toFixed(precision)}</span></div>
-          <div>H: <span className="text-green-500">{hoveredValues.high?.toFixed(precision)}</span></div>
-          <div>L: <span className="text-red-500">{hoveredValues.low?.toFixed(precision)}</span></div>
-          <div>C: <span className="text-purple-500">{hoveredValues.close?.toFixed(precision)}</span></div>
+        <div className="absolute top-2 left-4 bg-white dark:bg-slate-800 text-sm shadow-md border border-gray-200 dark:border-gray-700 rounded px-3 py-2 z-10">
+          <div className="font-semibold text-gray-700 dark:text-gray-200">
+            O: <span className="text-blue-500">{hoveredValues.open?.toFixed(precision)}</span>
+          </div>
+          <div className="font-semibold text-gray-700 dark:text-gray-200">
+            H: <span className="text-green-500">{hoveredValues.high?.toFixed(precision)}</span>
+          </div>
+          <div className="font-semibold text-gray-700 dark:text-gray-200">
+            L: <span className="text-red-500">{hoveredValues.low?.toFixed(precision)}</span>
+          </div>
+          <div className="font-semibold text-gray-700 dark:text-gray-200">
+            C: <span className="text-purple-500">{hoveredValues.close?.toFixed(precision)}</span>
+          </div>
         </div>
       )}
     </div>
