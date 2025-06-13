@@ -159,11 +159,9 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ seriesData, selecte
   const seriesRefs = useRef<Record<string, ISeriesApi<'Candlestick'>>>({});
   const [hoveredValues, setHoveredValues] = useState<{
     time?: number;
-    open?: number;
-    high?: number;
-    low?: number;
-    close?: number;
+    values: Record<string, { open: number; high: number; low: number; close: number }>;
   } | null>(null);
+
 
   useEffect(() => {
     if (!chartRef.current) return;
@@ -217,14 +215,26 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ seriesData, selecte
         return;
       }
     
-      const seriesData = param.seriesData.get(series);
-      if (seriesData) {
-        const { open, high, low, close } = seriesData as CandlestickData;
-        setHoveredValues({ time: param.time as number, open, high, low, close });
-      } else {
-        setHoveredValues(null);
+      const values: Record<string, any> = {};
+    
+      for (const [series, data] of param.seriesData.entries()) {
+        const key = Object.entries(seriesRefs.current).find(([k, ref]) => ref === series)?.[0];
+        if (key && data) {
+          values[key] = {
+            open: data.open,
+            high: data.high,
+            low: data.low,
+            close: data.close,
+          };
+        }
       }
+    
+      setHoveredValues({
+        time: param.time as number,
+        values,
+      });
     });
+
 
     return () => {
       resizeObserver.disconnect();
@@ -278,7 +288,24 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ seriesData, selecte
     }
   }, [data, hoveredValues]);
 
-  return <div ref={chartRef} className="relative w-full h-full" />;
+  return {
+    {hoveredValues && (
+      <div className="absolute top-2 left-4 bg-white dark:bg-slate-800 text-sm shadow-md border border-gray-200 dark:border-gray-700 rounded px-3 py-2 z-10 space-y-1">
+        {Object.entries(hoveredValues.values).map(([key, val]) => (
+          <div key={key}>
+            <div className="font-semibold text-gray-700 dark:text-gray-200">{key}</div>
+            <div className="flex gap-2 text-xs">
+              <span className="text-blue-500">O: {val.open?.toFixed(precision)}</span>
+              <span className="text-green-500">H: {val.high?.toFixed(precision)}</span>
+              <span className="text-red-500">L: {val.low?.toFixed(precision)}</span>
+              <span className="text-purple-500">C: {val.close?.toFixed(precision)}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+    <div ref={chartRef} className="relative w-full h-full" />
+  };
 };
 
 // === Main App ===
