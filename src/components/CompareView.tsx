@@ -343,6 +343,7 @@ const ChartExpressionApp: React.FC = () => {
             <label key={sym} className="inline-flex items-center space-x-2">
               <input
                 type="checkbox"
+                checked={selectedPlots.includes(sym)}
                 onChange={() => togglePlot(sym)}
               />
               <span>{sym}</span>
