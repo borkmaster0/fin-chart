@@ -157,6 +157,13 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ seriesData, selecte
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<ReturnType<typeof createChart> | null>(null);
   const seriesRefs = useRef<Record<string, ISeriesApi<'Candlestick'>>>({});
+  const [hoveredValues, setHoveredValues] = useState<{
+    time?: number;
+    open?: number;
+    high?: number;
+    low?: number;
+    close?: number;
+  } | null>(null);
 
   useEffect(() => {
     if (!chartRef.current) return;
