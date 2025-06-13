@@ -282,12 +282,6 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ seriesData, selecte
     });
   }, [seriesData, selectedPlots]);
 
-  useEffect(() => {
-    if (seriesRef.current) {
-      seriesRef.current.setData(data);
-    }
-  }, [data, hoveredValues]);
-
   return (
   <div className="relative w-full h-full">
     {hoveredValues && (
