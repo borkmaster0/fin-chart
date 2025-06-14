@@ -99,7 +99,7 @@ export default function BondView() {
       timeScale: { borderVisible: false },
     });
   
-    const candleSeries = chart.addCandlestickSeries({
+    const candleSeries = chart.addSeries(CandlestickSeries, {
       upColor: '#26a69a',
       downColor: '#ef5350',
       borderVisible: false,
