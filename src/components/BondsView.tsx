@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { createChart, ISeriesApi, CandlestickSeries, ColorType, CrosshairMode } from 'lightweight-charts';
-import { fetchBondOrderBook, fetchBillOrderBook } from '../utils/api';
+import { fetchBondOrderBook, fetchBillOrderBook, fetchQuickBondData } from '../utils/api';
 
 interface CandlestickData {
   time: number;
