@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { createChart, ISeriesApi, CandlestickSeries, ColorType, CrosshairMode } from 'lightweight-charts';
 import { fetchBondOrderBook, fetchBillOrderBook, fetchQuickBondData } from '../utils/api';
+import { TreasuryBondOrderBook, TreasuryBillsOrderBook } from '../types/index';
 
 //import React, { useEffect, useState } from 'react';
 //import { fetchQuickBondData } from '../utils/api';
@@ -18,6 +19,8 @@ export default function BondView() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
+  const [bondOrderBook, setBondOrderBook] = useState<TreasuryBondOrderBook[]>([]);
+  const [billOrderBook, setBillOrderBook] = useState<TreasuryBillsOrderBook[]>([]);
 
   useEffect(() => {
     const storedDarkMode = localStorage.getItem('darkMode');
@@ -28,6 +31,10 @@ export default function BondView() {
         setLoading(true);
         const response = await fetchQuickBondData();
         setBondData(response.data);
+        const bondData = await fetchBondOrderBook();
+        setBondOrderBook(bondData.data);
+        const billData = await fetchBillOrderBook();
+        setBillOrderBook(billData.data);
       } catch (err) {
         setError('Failed to fetch bond data.');
         console.error(err);
