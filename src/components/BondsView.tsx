@@ -19,6 +19,7 @@ export default function BondView() {
   const [bondOrderBook, setBondOrderBook] = useState<TreasuryBondOrderBook[]>([]);
   const [billOrderBook, setBillOrderBook] = useState<TreasuryBillsOrderBook[]>([]);
   const [activeTab, setActiveTab] = useState<'overview' | 'quotes' | 'charts'>('overview');
+  const [quoteTab, setQuoteTab] = useState<'bonds' | 'bills'>('bonds');
 
   useEffect(() => {
     const storedDarkMode = localStorage.getItem('darkMode');
@@ -120,6 +121,22 @@ export default function BondView() {
 
             {activeTab === 'quotes' && (
               <div className="space-y-8">
+                <div className="flex space-x-4 mb-4 border-b border-gray-300 dark:border-gray-700">
+                  {['bonds', 'bills'].map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setQuoteTab(tab as 'bonds' | 'bills')}
+                      className={`px-3 py-1 font-medium border-b-2 text-sm transition-colors ${
+                        quoteTab === tab
+                          ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                          : 'border-transparent hover:text-blue-500 dark:hover:text-blue-300'
+                      }`}
+                    >
+                      {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                    </button>
+                  ))}
+                </div>
+                {quoteTab === 'bonds' && (
                 <div>
                   <h3 className="text-lg font-semibold mb-2">Treasury Bonds</h3>
                   <div className="overflow-x-auto">
@@ -152,7 +169,9 @@ export default function BondView() {
                     </table>
                   </div>
                 </div>
-
+              )}
+              
+              {quoteTab === 'bills' && (
                 <div>
                   <h3 className="text-lg font-semibold mb-2">Treasury Bills</h3>
                   <div className="overflow-x-auto">
@@ -181,8 +200,7 @@ export default function BondView() {
                     </table>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {activeTab === 'charts' && (
               <div className="text-center text-gray-500 dark:text-gray-400">Charts will be implemented soon.</div>
