@@ -142,7 +142,7 @@ export default function BondView() {
                           >
                             <td className="px-4 py-2">{bond.maturityDate}</td>
                             <td className="px-4 py-2 text-right">{bond.coupon}</td>
-                            <td className="px-4 py-2 text-right text-green">{bond.bid}</td>
+                            <td className="px-4 py-2 text-right text-positive">{bond.bid}</td>
                             <td className="px-4 py-2 text-right text-red">{bond.ask}</td>
                             <td className="px-4 py-2 text-right">{bond.askYield}</td>
                             <td className="px-4 py-2 text-right">{bond.change}</td>
@@ -172,7 +172,7 @@ export default function BondView() {
                             className="border-t border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
                           >
                             <td className="px-4 py-2">{bill.maturityDate}</td>
-                            <td className="px-4 py-2 text-right text-green">{bill.bid}</td>
+                            <td className="px-4 py-2 text-right text-green-700">{bill.bid}</td>
                             <td className="px-4 py-2 text-right text-red">{bill.ask}</td>
                             <td className="px-4 py-2 text-right">{bill.askYield}</td>
                           </tr>
