@@ -60,6 +60,14 @@ export interface TreasuryBillsOrderBook {
 }
 
 export interface QuickBondData {
-  data: [];
+  data: BondItem[];
   timestamp: string;
+}
+
+export interface BondItem {
+  shortName: string;
+  last: string;
+  change: string;
+  change_pct: string;
+  maturityDate: string;
 }
