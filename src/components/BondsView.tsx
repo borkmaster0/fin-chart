@@ -63,10 +63,10 @@ export default function BondView() {
         // Map to format expected by lightweight-charts
         const chartData = history.open.map((_, i) => ({
           time: Math.floor(history.timestamp[i] / 1000),
-          open: history.open[i],
-          high: history.high[i],
-          low: history.low[i],
-          close: history.close[i],
+          open: Number(history.open[i]),
+          high: Number(history.high[i]),
+          low: Number(history.low[i]),
+          close: Number(history.close[i]),
         }));
   
         setCandlestickData(chartData);
