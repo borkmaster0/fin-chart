@@ -110,7 +110,7 @@ export default function BondView() {
                         >
                           {item.change_pct}
                         </td>
-                        <td className="px-4 py-2 text-right">{item.maturityDate || 'N/A'}</td>
+                        <td className="px-4 py-2 text-right">{item.maturity_date || 'N/A'}</td>
                       </tr>
                     ))}
                   </tbody>
