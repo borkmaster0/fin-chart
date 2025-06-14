@@ -128,9 +128,9 @@ export async function fetchBondData(symbol: string, timeframe: string): Promise<
       timeRange: a.data.chartData.timeRange,
       last: a.data.chartData.allSymbols[0].last,
       history: {
-        open: a.data.chartData.priceBars.map((item)=>(item.open))
-        high: a.data.chartData.priceBars.map((item)=>(item.high))
-        low: a.data.chartData.priceBars.map((item)=>(item.low))
+        open: a.data.chartData.priceBars.map((item)=>(item.open)),
+        high: a.data.chartData.priceBars.map((item)=>(item.high)),
+        low: a.data.chartData.priceBars.map((item)=>(item.low)),
         close: a.data.chartData.priceBars.map((item)=>(item.close))
       }
     }
