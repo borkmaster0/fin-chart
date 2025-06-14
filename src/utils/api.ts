@@ -96,6 +96,9 @@ export async function fetchQuickBondData(): Promise<QuickBondData> {
       data: a.FormattedQuoteResult.FormattedQuote,
       timestamp: String(new Date().valueOf())
     }
+  } catch (error) {
+    console.error('Error fetching bond data: ', error);
+    throw new Error(error instanceof Error? error.message : 'Failed to fetch data');
   }
 }
 
