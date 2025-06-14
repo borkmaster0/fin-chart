@@ -36,7 +36,7 @@ function App() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showPortfolioDialog, setShowPortfolioDialog] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [currentView, setCurrentView] = useState<'chart' | 'portfolio' | 'backtesting' | 'compare'>('chart');
+  const [currentView, setCurrentView] = useState<'chart' | 'portfolio' | 'backtesting' | 'advanced'>('chart');
 
   // Load saved symbol on app initialization
   useEffect(() => {
@@ -180,7 +180,7 @@ function App() {
     { id: 'chart', label: 'Chart', icon: BarChart3 },
     { id: 'portfolio', label: 'Portfolio', icon: Briefcase },
     { id: 'backtesting', label: 'Backtesting', icon: TrendingUp },
-    { id: 'compare', label: 'Compare', icon: LineChart }
+    { id: 'advanced', label: 'Advanced', icon: LineChart }
   ];
 
   return (
