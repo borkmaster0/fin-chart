@@ -134,7 +134,7 @@ export default function BondView() {
                         </tr>
                       </thead>
                       <tbody>
-                        {bondOrderBook.data.map((bond, idx) => (
+                        {bondOrderBook.map((bond, idx) => (
                           <tr
                             key={idx}
                             className="border-t border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
@@ -164,7 +164,7 @@ export default function BondView() {
                         </tr>
                       </thead>
                       <tbody>
-                        {billOrderBook.data.map((bill, idx) => (
+                        {billOrderBook.map((bill, idx) => (
                           <tr
                             key={idx}
                             className="border-t border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
