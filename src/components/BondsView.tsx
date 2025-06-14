@@ -145,7 +145,7 @@ export default function BondView() {
                             <td className="px-4 py-2 text-right text-green-600">{bond.bid}</td>
                             <td className="px-4 py-2 text-right text-red-500">{bond.ask}</td>
                             <td className="px-4 py-2 text-right">{bond.askYield}</td>
-                            <td className="px-4 py-2 text-right">{bond.change}</td>
+                            <td className="px-4 py-2 text-right">{bond.change === 'unch.' ? 0.0000 : bond.change}</td>
                           </tr>
                         ))}
                       </tbody>
