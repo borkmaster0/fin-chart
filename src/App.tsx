@@ -9,6 +9,7 @@ import PortfolioDisplay from './components/PortfolioDisplay';
 import SymbolTransactions from './components/SymbolTransactions';
 import BacktestingView from './components/BacktestingView';
 import CompareView from './components/CompareView';
+import BondsView from './components/BondsView';
 import { fetchChartData } from './utils/api';
 import { ChartData } from './types';
 import { loadSettings, saveCurrentSymbol, loadCurrentSymbol } from './utils/db';
