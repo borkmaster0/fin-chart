@@ -55,7 +55,8 @@ export async function fetchBondOrderBook(): Promise<TreasuryBondOrderBook> {
 
     const a = await response.json();
     return {
-      bonds: a.data.instruments
+      bonds: a.data.instruments,
+      timestamp: a.data.timestamp
     }
   } catch (error) {
     console.error('Error fetching treasury bond data: ', error);
@@ -73,7 +74,8 @@ export async function fetchBillOrderBook(): Promise<TreasuryBillsOrderBookOrderB
 
     const a = await response.json();
     return {
-      bonds: a.data.instruments
+      bonds: a.data.instruments,
+      timestamp: a.data.timestamp
     }
   } catch (error) {
     console.error('Error fetching treasury bond data: ', error);
