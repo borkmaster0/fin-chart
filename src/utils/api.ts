@@ -83,6 +83,21 @@ export async function fetchBillOrderBook(): Promise<TreasuryBillsOrderBookOrderB
   }
 }
 
+export async function fetchQuickBondData(): Promise<> {
+  const url = "https://quote.cnbc.com/quote-html-webservice/restQuote/symbolType/symbol?symbols=US1M%7CUS2M%7CUS3M%7CUS4M%7CUS6M%7CUS1Y%7CUS2Y%7CUS3Y%7CUS5Y%7CUS7Y%7CUS10Y%7CUS20Y%7CUS30Y&requestMethod=itv&noform=1&partnerId=2&fund=1&exthrs=1&output=json&events=1"
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    const a = await response.json();
+    return {
+      a.FormattedQuoteResult.FormattedQuote
+    }
+  }
+}
+
 export async function fetchChartData(symbol: string, timeframe: string): Promise<ChartData> {
   // Calculate start time based on timeframe
   const end = Math.floor(Date.now() / 1000);
