@@ -48,3 +48,11 @@ interface ChartPoint {
 export interface StockArray {
   symbols: string[];
 }
+
+export interface TreasuryBondOrderBook {
+  notes: []
+}
+
+export interface TreasuryBillsOrderBook {
+  bills: []
+}
