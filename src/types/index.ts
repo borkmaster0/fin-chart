@@ -71,3 +71,16 @@ export interface BondItem {
   change_pct: string;
   maturityDate: string;
 }
+
+export interface BondData {
+  symbol: string;
+  timeRange: string;
+  last: string;
+  history: {
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    timestamp: number;
+  }
+}
