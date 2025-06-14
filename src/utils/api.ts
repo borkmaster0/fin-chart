@@ -134,6 +134,9 @@ export async function fetchBondData(symbol: string, timeframe: string): Promise<
         close: a.data.chartData.priceBars.map((item)=>(item.close))
       }
     }
+  } catch (error) {
+    console.error('Error fetching bond data: ', error);
+    throw new Error(error instanceof Error? error.message : 'Failed to fetch data');
   }
 }
 
