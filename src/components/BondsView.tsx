@@ -61,6 +61,7 @@ export default function BondView() {
         const { history } = bondChartData;
   
         // Map to format expected by lightweight-charts
+        console.log(chartData);
         const chartData = history.open.map((_, i) => ({
           time: Math.floor(history.timestamp[i] / 1000),
           open: Number(history.open[i]),
