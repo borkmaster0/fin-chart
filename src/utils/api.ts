@@ -63,6 +63,24 @@ export async function fetchBondOrderBook(): Promise<TreasuryBondOrderBook> {
   }
 }
 
+export async function fetchBillOrderBook(): Promise<TreasuryBillsOrderBookOrderBook> {
+  const url = "https://corsproxy.io/?https://www.barrons.com/market-data/bonds/treasuries?id=%7B%22treasury%22%3A%22BILLS%22%7D&type=mdc_treasury";
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    const a = await response.json();
+    return {
+      bonds: a.data.instruments
+    }
+  } catch (error) {
+    console.error('Error fetching treasury bond data: ', error);
+    throw new Error(error instanceof Error ? error.message : 'Failed to fetch data');
+  }
+}
+
 export async function fetchChartData(symbol: string, timeframe: string): Promise<ChartData> {
   // Calculate start time based on timeframe
   const end = Math.floor(Date.now() / 1000);
