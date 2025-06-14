@@ -410,7 +410,7 @@ function App() {
           <BacktestingView />
         )}
 
-        {currentView === 'compare' && (
+        {currentView === 'advanced' && (
           <CompareView darkMode={darkMode}/>
         )}
 
