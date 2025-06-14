@@ -3,9 +3,6 @@ import { createChart, ISeriesApi, CandlestickSeries, ColorType, CrosshairMode } 
 import { fetchBondOrderBook, fetchBillOrderBook, fetchQuickBondData } from '../utils/api';
 import { TreasuryBondOrderBook, TreasuryBillsOrderBook } from '../types/index';
 
-//import React, { useEffect, useState } from 'react';
-//import { fetchQuickBondData } from '../utils/api';
-
 interface BondItem {
   shortName: string;
   last: string;
