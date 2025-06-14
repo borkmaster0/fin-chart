@@ -44,7 +44,7 @@ export default function BondView() {
   return (
     <div className={`${containerClass}`}>
       <div className="p-4 bg-white dark:bg-gray-900 min-h-screen text-gray-900 dark:text-gray-100">
-        <h2 className="text-xl font-semibold mb-4">Current U.S. Treasury Yields</h2>
+        <h2 className="text-xl font-semibold mb-4">U.S. Treasury Bond Data</h2>
 
         {loading && <div className="text-center">Loading bond data...</div>}
         {error && <div className="text-red-500 text-center">{error}</div>}
