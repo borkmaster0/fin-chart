@@ -57,6 +57,9 @@ export async function fetchBondOrderBook(): Promise<TreasuryBondOrderBook> {
     return {
       bonds: a.data.instruments
     }
+  } catch (error) {
+    console.error('Error fetching treasury bond data: ', error);
+    throw new Error(error instanceof Error ? error.message : 'Failed to fetch data');
   }
 }
 
