@@ -1,4 +1,4 @@
-import { ChartData, StockArray, TreasuryBondOrderBook, TreasuryBillsOrderBook, QuickBondData } from '../types';
+import { ChartData, StockArray, TreasuryBondOrderBook, TreasuryBillsOrderBook, QuickBondData, BondData } from '../types';
 
 export interface CurrentPrice {
   symbol: string;
@@ -99,6 +99,41 @@ export async function fetchQuickBondData(): Promise<QuickBondData> {
   } catch (error) {
     console.error('Error fetching bond data: ', error);
     throw new Error(error instanceof Error? error.message : 'Failed to fetch data');
+  }
+}
+
+export async function fetchBondData(symbol: string, timeframe: string): Promise<BondData> {
+  switch (timeframe) {
+    case '1D':
+    case '5D':
+    case '1M':
+    case '3M':
+    case '6M':
+    case 'YTD':
+    case '1Y':
+    case '5Y':
+    case 'ALL':
+    default:
+      timeframe = '1D';
+  }
+  const url = `https://webql-redesign.cnbcfm.com/graphql?operationName=getQuoteChartData&variables=%7B%22symbol%22%3A%22${symbol}%22%2C%22timeRange%22%3A%22${timeframe}%22%7D&extensions=%7B%22persistedQuery%22%3A%7B%22version%22%3A1%2C%22sha256Hash%22%3A%229e1670c29a10707c417a1efd327d4b2b1d456b77f1426e7e84fb7d399416bb6b%22%7D%7D`
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    const a = await response.json();
+    return {
+      symbol: a.data.chartData,
+      timeRange: a.data.chartData.timeRange,
+      last: a.data.chartData.allSymbols[0].last,
+      history: {
+        open: a.data.chartData.priceBars.map((item)=>(item.open))
+        high: a.data.chartData.priceBars.map((item)=>(item.high))
+        low: a.data.chartData.priceBars.map((item)=>(item.low))
+        close: a.data.chartData.priceBars.map((item)=>(item.close))
+      }
+    }
   }
 }
 
