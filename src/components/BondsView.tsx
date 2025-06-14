@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { createChart, ISeriesApi, CandlestickSeries, ColorType, CrosshairMode } from 'lightweight-charts';
 import { fetchBondOrderBook, fetchBillOrderBook, fetchQuickBondData, fetchBondData } from '../utils/api';
 import { TreasuryBondOrderBook, TreasuryBillsOrderBook } from '../types/index';
@@ -20,6 +20,9 @@ export default function BondView() {
   const [billOrderBook, setBillOrderBook] = useState<TreasuryBillsOrderBook[]>([]);
   const [activeTab, setActiveTab] = useState<'overview' | 'quotes' | 'charts'>('overview');
   const [quoteTab, setQuoteTab] = useState<'bonds' | 'bills'>('bonds');
+  const chartContainerRef = useRef<HTMLDivElement | null>(null);
+  const [chartLoaded, setChartLoaded] = useState(false);
+  const [candlestickData, setCandlestickData] = useState<any[]>([]);
 
   useEffect(() => {
     const storedDarkMode = localStorage.getItem('darkMode');
@@ -46,6 +49,78 @@ export default function BondView() {
 
     getBondData();
   }, []);
+
+  // Fetch bond data
+  useEffect(() => {
+    if (activeTab !== 'charts' || chartLoaded) return;
+  
+    const loadChart = async () => {
+      try {
+        const bondChartData = await fetchBondData("US1M", "1D"); // replace with correct symbol if needed
+  
+        const { history } = bondChartData;
+  
+        // Map to format expected by lightweight-charts
+        const chartData = history.open.map((_, i) => ({
+          time: i + 1, // You might want to use real timestamps here if available
+          open: history.open[i],
+          high: history.high[i],
+          low: history.low[i],
+          close: history.close[i],
+        }));
+  
+        setCandlestickData(chartData);
+        setChartLoaded(true);
+      } catch (err) {
+        console.error('Error loading chart data:', err);
+      }
+    };
+  
+    loadChart();
+  }, [activeTab, chartLoaded]);
+
+  // Initialize charts
+  useEffect(() => {
+    if (!chartContainerRef.current || candlestickData.length === 0) return;
+  
+    const chart = createChart(chartContainerRef.current, {
+      width: chartContainerRef.current.clientWidth,
+      height: 400,
+      layout: {
+        background: { color: isDarkMode ? '#1f2937' : '#ffffff' },
+        textColor: isDarkMode ? '#cbd5e1' : '#111827',
+      },
+      grid: {
+        vertLines: { color: isDarkMode ? '#374151' : '#e5e7eb' },
+        horzLines: { color: isDarkMode ? '#374151' : '#e5e7eb' },
+      },
+      crosshair: { mode: CrosshairMode.Normal },
+      priceScale: { borderVisible: false },
+      timeScale: { borderVisible: false },
+    });
+  
+    const candleSeries = chart.addCandlestickSeries({
+      upColor: '#26a69a',
+      downColor: '#ef5350',
+      borderVisible: false,
+      wickUpColor: '#26a69a',
+      wickDownColor: '#ef5350',
+    });
+  
+    candleSeries.setData(candlestickData);
+  
+    // Resize chart on window resize
+    const handleResize = () => {
+      chart.resize(chartContainerRef.current!.clientWidth, 400);
+    };
+  
+    window.addEventListener('resize', handleResize);
+  
+    return () => {
+      chart.remove();
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [candlestickData, isDarkMode]);
 
   const containerClass = isDarkMode ? 'dark' : '';
 
@@ -204,7 +279,7 @@ export default function BondView() {
               </div>
             )}
             {activeTab === 'charts' && (
-              <div className="text-center text-gray-500 dark:text-gray-400">Charts will be implemented soon.</div>
+              <div className="w-full h-[400px]" ref={chartContainerRef}></div>
             )}
           </>
         )}
