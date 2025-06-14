@@ -126,11 +126,12 @@ export default function BondView() {
                     <table className="min-w-full border border-gray-200 dark:border-gray-700 table-auto">
                       <thead className="bg-gray-100 dark:bg-gray-800">
                         <tr>
-                          <th className="px-4 py-2 text-left">CUSIP</th>
+                          <th className="px-4 py-2 text-left">Maturity</th>
                           <th className="px-4 py-2 text-right">Coupon</th>
-                          <th className="px-4 py-2 text-right">Maturity</th>
-                          <th className="px-4 py-2 text-right">Price</th>
-                          <th className="px-4 py-2 text-right">Yield</th>
+                          <th className="px-4 py-2 text-right">Bid</th>
+                          <th className="px-4 py-2 text-right">Ask</th>
+                          <th className="px-4 py-2 text-right">Ask Yield</th>
+                          <th className="px-4 py-2 text-right">Change</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -139,11 +140,12 @@ export default function BondView() {
                             key={idx}
                             className="border-t border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
                           >
-                            <td className="px-4 py-2">{bond.cusip}</td>
+                            <td className="px-4 py-2">{bond.maturityDate}</td>
                             <td className="px-4 py-2 text-right">{bond.coupon}</td>
-                            <td className="px-4 py-2 text-right">{bond.maturityDate}</td>
-                            <td className="px-4 py-2 text-right">{bond.price}</td>
-                            <td className="px-4 py-2 text-right">{bond.yield}</td>
+                            <td className="px-4 py-2 text-right">{bond.bid}</td>
+                            <td className="px-4 py-2 text-right">{bond.ask}</td>
+                            <td className="px-4 py-2 text-right">{bond.askYield}</td>
+                            <td className="px-4 py-2 text-right">{bond.change}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -157,10 +159,10 @@ export default function BondView() {
                     <table className="min-w-full border border-gray-200 dark:border-gray-700 table-auto">
                       <thead className="bg-gray-100 dark:bg-gray-800">
                         <tr>
-                          <th className="px-4 py-2 text-left">CUSIP</th>
-                          <th className="px-4 py-2 text-right">Discount Rate</th>
-                          <th className="px-4 py-2 text-right">Maturity</th>
-                          <th className="px-4 py-2 text-right">Price</th>
+                          <th className="px-4 py-2 text-left">Maturity</th>
+                          <th className="px-4 py-2 text-right">Bid</th>
+                          <th className="px-4 py-2 text-right">Ask</th>
+                          <th className="px-4 py-2 text-right">Ask Yield</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -169,10 +171,10 @@ export default function BondView() {
                             key={idx}
                             className="border-t border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
                           >
-                            <td className="px-4 py-2">{bill.cusip}</td>
-                            <td className="px-4 py-2 text-right">{bill.discountRate}</td>
-                            <td className="px-4 py-2 text-right">{bill.maturityDate}</td>
-                            <td className="px-4 py-2 text-right">{bill.price}</td>
+                            <td className="px-4 py-2">{bill.maturityDate}</td>
+                            <td className="px-4 py-2 text-right">{bill.bid}</td>
+                            <td className="px-4 py-2 text-right">{bill.ask}</td>
+                            <td className="px-4 py-2 text-right">{bill.askYield}</td>
                           </tr>
                         ))}
                       </tbody>
