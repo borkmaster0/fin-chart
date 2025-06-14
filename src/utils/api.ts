@@ -1,4 +1,4 @@
-import { ChartData, StockArray } from '../types';
+import { ChartData, StockArray, TreasuryBondOrderBook, TreasuryBillsOrderBook } from '../types';
 
 export interface CurrentPrice {
   symbol: string;
@@ -42,6 +42,21 @@ export async function fetchTrendingStocks(symbol: string): Promise<StockArray> {
   } catch (error) {
     console.error('Error fetching trending stock data: ', error);
     throw new Error(error instanceof Error ? error.message : 'Failed to fetch data');
+  }
+}
+
+export async function fetchBondOrderBook(): Promise<TreasuryBondOrderBook> {
+  const url = "https://corsproxy.io/?https://www.barrons.com/market-data/bonds/treasuries?id=%7B%22treasury%22%3A%22NOTES_AND_BONDS%22%7D&type=mdc_treasury";
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    const a = await response.json();
+    return {
+      bonds: a.data.instruments
+    }
   }
 }
 
