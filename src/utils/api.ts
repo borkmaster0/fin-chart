@@ -46,7 +46,7 @@ export async function fetchTrendingStocks(symbol: string): Promise<StockArray> {
 }
 
 export async function fetchBondOrderBook(): Promise<TreasuryBondOrderBook> {
-  const url = "https://www.barrons.com/market-data/bonds/treasuries?id=%7B%22treasury%22%3A%22NOTES_AND_BONDS%22%7D&type=mdc_treasury";
+  const url = "https://corsproxy.io/?https://www.barrons.com/market-data/bonds/treasuries?id=%7B%22treasury%22%3A%22NOTES_AND_BONDS%22%7D&type=mdc_treasury";
   try {
     const response = await fetch(url);
     if (!response.ok) {
@@ -65,7 +65,7 @@ export async function fetchBondOrderBook(): Promise<TreasuryBondOrderBook> {
 }
 
 export async function fetchBillOrderBook(): Promise<TreasuryBillsOrderBookOrderBook> {
-  const url = "https://www.barrons.com/market-data/bonds/treasuries?id=%7B%22treasury%22%3A%22BILLS%22%7D&type=mdc_treasury";
+  const url = "https://corsproxy.io/?https://www.barrons.com/market-data/bonds/treasuries?id=%7B%22treasury%22%3A%22BILLS%22%7D&type=mdc_treasury";
   try {
     const response = await fetch(url);
     if (!response.ok) {
