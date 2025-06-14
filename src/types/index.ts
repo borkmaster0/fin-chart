@@ -50,9 +50,11 @@ export interface StockArray {
 }
 
 export interface TreasuryBondOrderBook {
-  notes: []
+  notes: [];
+  timestamp: string;
 }
 
 export interface TreasuryBillsOrderBook {
   bills: []
+  timestamp: string;
 }
