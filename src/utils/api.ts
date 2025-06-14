@@ -132,6 +132,7 @@ export async function fetchBondData(symbol: string, timeframe: string): Promise<
         high: a.data.chartData.priceBars.map((item)=>(item.high)),
         low: a.data.chartData.priceBars.map((item)=>(item.low)),
         close: a.data.chartData.priceBars.map((item)=>(item.close))
+        timestamp: a.data.chartData.priceBars.map((item)=>(item.tradeTimeinMills))
       }
     }
   } catch (error) {
