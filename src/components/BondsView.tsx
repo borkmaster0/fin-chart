@@ -17,8 +17,12 @@ export default function BondView() {
   const [bondData, setBondData] = useState<BondItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
 
   useEffect(() => {
+    const storedDarkMode = localStorage.getItem('darkMode');
+    setIsDarkMode(storedDarkMode === 'true');
+
     const getBondData = async () => {
       try {
         setLoading(true);
@@ -35,44 +39,49 @@ export default function BondView() {
     getBondData();
   }, []);
 
-  if (loading) {
-    return <div className="p-4 text-center">Loading bond data...</div>;
-  }
-
-  if (error) {
-    return <div className="p-4 text-red-500 text-center">{error}</div>;
-  }
+  const containerClass = isDarkMode ? 'dark' : '';
 
   return (
-    <div className="p-4">
-      <h2 className="text-xl font-semibold mb-4">Current U.S. Treasury Yields</h2>
-      <div className="overflow-x-auto">
-        <table className="min-w-full table-auto border border-gray-200">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="px-4 py-2 text-left">Name</th>
-              <th className="px-4 py-2 text-right">Yield (%)</th>
-              <th className="px-4 py-2 text-right">Change</th>
-              <th className="px-4 py-2 text-right">Change (%)</th>
-              <th className="px-4 py-2 text-right">Maturity</th>
-            </tr>
-          </thead>
-          <tbody>
-            {bondData.map((item, idx) => (
-              <tr key={idx} className="border-t border-gray-200 hover:bg-gray-50">
-                <td className="px-4 py-2">{item.shortName}</td>
-                <td className="px-4 py-2 text-right">{item.last}</td>
-                <td className={`px-4 py-2 text-right ${item.change.startsWith('-') ? 'text-red-500' : 'text-green-600'}`}>
-                  {item.change}
-                </td>
-                <td className={`px-4 py-2 text-right ${item.change_pct.startsWith('-') ? 'text-red-500' : 'text-green-600'}`}>
-                  {item.change_pct}%
-                </td>
-                <td className="px-4 py-2 text-right">{item.maturityDate || 'N/A'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <div className={`${containerClass}`}>
+      <div className="p-4 bg-white dark:bg-gray-900 min-h-screen text-gray-900 dark:text-gray-100">
+        <h2 className="text-xl font-semibold mb-4">Current U.S. Treasury Yields</h2>
+
+        {loading && <div className="text-center">Loading bond data...</div>}
+        {error && <div className="text-red-500 text-center">{error}</div>}
+
+        {!loading && !error && (
+          <div className="overflow-x-auto">
+            <table className="min-w-full table-auto border border-gray-200 dark:border-gray-700">
+              <thead className="bg-gray-100 dark:bg-gray-800">
+                <tr>
+                  <th className="px-4 py-2 text-left">Name</th>
+                  <th className="px-4 py-2 text-right">Yield (%)</th>
+                  <th className="px-4 py-2 text-right">Change</th>
+                  <th className="px-4 py-2 text-right">Change (%)</th>
+                  <th className="px-4 py-2 text-right">Maturity</th>
+                </tr>
+              </thead>
+              <tbody>
+                {bondData.map((item, idx) => (
+                  <tr
+                    key={idx}
+                    className="border-t border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  >
+                    <td className="px-4 py-2">{item.shortName}</td>
+                    <td className="px-4 py-2 text-right">{item.last}</td>
+                    <td className={`px-4 py-2 text-right ${item.change.startsWith('-') ? 'text-red-500' : 'text-green-600'}`}>
+                      {item.change}
+                    </td>
+                    <td className={`px-4 py-2 text-right ${item.change_pct.startsWith('-') ? 'text-red-500' : 'text-green-600'}`}>
+                      {item.change_pct}%
+                    </td>
+                    <td className="px-4 py-2 text-right">{item.maturityDate || 'N/A'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
