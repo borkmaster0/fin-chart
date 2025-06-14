@@ -55,6 +55,11 @@ export interface TreasuryBondOrderBook {
 }
 
 export interface TreasuryBillsOrderBook {
-  bills: []
+  bills: [];
+  timestamp: string;
+}
+
+export interface QuickBondData {
+  data: [];
   timestamp: string;
 }
