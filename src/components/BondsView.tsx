@@ -73,7 +73,7 @@ export default function BondView() {
                       {item.change}
                     </td>
                     <td className={`px-4 py-2 text-right ${item.change_pct.startsWith('-') ? 'text-red-500' : 'text-green-600'}`}>
-                      {item.change_pct}%
+                      {item.change_pct}
                     </td>
                     <td className="px-4 py-2 text-right">{item.maturityDate || 'N/A'}</td>
                   </tr>
