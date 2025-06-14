@@ -40,6 +40,7 @@ export default function BondView() {
   }, []);
 
   const containerClass = isDarkMode ? 'dark' : '';
+  console.log(bondData);
 
   return (
     <div className={`${containerClass}`}>
