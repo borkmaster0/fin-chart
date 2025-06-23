@@ -133,6 +133,7 @@ function App() {
     setError(null);
     
     try {
+      // Fetch data. If there is a symbol, then fetch the symbol otherwise default to QQQ.
       const data = await fetchChartData(symbol === '' ? 'QQQ' : symbol, timeframe);
       
       // Compare with previous data if it exists
