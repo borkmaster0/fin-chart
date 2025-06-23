@@ -61,14 +61,14 @@ export default function BondView() {
         // Map to format expected by lightweight-charts
         console.log(bondChartData);
         const arrayLength = new Array(history.timestamp.length)
-        const chartData = bondChartData.history.map((_, i) => ({
-          time: Math.floor(history.timestamp[i] / 1000),
-          open: Number(history.open[i]),
-          high: Number(history.high[i]),
-          low: Number(history.low[i]),
-          close: Number(history.close[i]),
+        const chartData = history.open.map((_, i) => ({
+          time: Math.floor(history.timestamp[i] / 1000), // convert ms → seconds for lightweight-charts
+          open: history.open[i],
+          high: history.high[i],
+          low: history.low[i],
+          close: history.close[i],
         }));
-  
+
         setCandlestickData(chartData);
         setChartLoaded(true);
       } catch (err) {
