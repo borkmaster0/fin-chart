@@ -62,11 +62,11 @@ export default function BondView() {
         console.log(bondChartData);
         const arrayLength = new Array(history.timestamp.length)
         const chartData = bondChartData.symbol.priceBars.map((item)=>({
-          time: item.tradeTimeinMills, 
-          open: item.open, 
-          high: item.high, 
-          low: item.low, 
-          close: item.close
+          time: Number(item.tradeTimeinMills), 
+          open: Number(item.open), 
+          high: Number(item.high), 
+          low: Number(item.low), 
+          close: Number(item.close)
         }));
 
         setCandlestickData(chartData);
