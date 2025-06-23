@@ -68,6 +68,7 @@ export default function BondView() {
           close: Number(item.close),
           time: Number(item.tradeTimeinMills)
         }));
+        console.log(chartData);
 
         setCandlestickData(chartData);
         setChartLoaded(true);
