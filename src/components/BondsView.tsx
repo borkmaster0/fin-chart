@@ -62,7 +62,7 @@ export default function BondView() {
         console.log(bondChartData);
         const arrayLength = new Array(history.timestamp.length)
         const chartData = bondChartData.symbol.priceBars.map((item)=>({ 
-          open: Number(item.open), 
+          open: Number(item.open)/1000, 
           high: Number(item.high), 
           low: Number(item.low), 
           close: Number(item.close),
