@@ -66,7 +66,7 @@ export default function BondView() {
           high: Number(item.high), 
           low: Number(item.low), 
           close: Number(item.close),
-          time: Number(item.tradeTimeinMills)/1000
+          time: Number(item.tradeTimeinMills)/100
         })).slice(0, -1);
         console.log(chartData);
 
