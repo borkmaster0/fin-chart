@@ -76,28 +76,28 @@ const StockSummary: React.FC<StockSummaryProps> = ({ data, isLoading }) => {
       <div className="space-y-3 text-sm">
         <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-700">
           <span className="text-slate-600 dark:text-slate-400">Previous Close</span>
-          <span className="font-medium">{previousClose.toLocaleString()}</span>
+          <span className="font-medium">{previousClose}</span>
         </div>
         <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-700">
           <span className="text-slate-600 dark:text-slate-400">Open</span>
-          <span className="font-medium">{(previousOpen.toLocaleString())}</span>
+          <span className="font-medium">{(previousOpen)}</span>
         </div>
         <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-700">
           <span className="text-slate-600 dark:text-slate-400">Day Range</span>
           <span className="font-medium">
-            {(meta.regularMarketDayLow).toLocaleString()} - {(meta.regularMarketDayHigh).toLocaleString()}
+            {(meta.regularMarketDayLow)} - {(meta.regularMarketDayHigh)}
           </span>
         </div>
         <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-700">
           <span className="text-slate-600 dark:text-slate-400">52 Week Range</span>
           <span className="font-medium">
-            {(meta.fiftyTwoWeekLow).toLocaleString()} - {(meta.fiftyTwoWeekHigh).toLocaleString()}
+            {(meta.fiftyTwoWeekLow)} - {(meta.fiftyTwoWeekHigh)}
           </span>
         </div>
         <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-700">
           <span className="text-slate-600 dark:text-slate-400">Volume</span>
           <span className="font-medium">
-            {meta.regularMarketVolume.toLocaleString()}
+            {meta.regularMarketVolume}
           </span>
         </div>
         <div className="flex justify-between py-2">
