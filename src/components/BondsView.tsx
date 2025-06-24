@@ -77,8 +77,8 @@ export default function BondView() {
           })).slice(0, -1);
           allData[symbol] = seriesData;
     
-          // Wait for 1 second before the next request
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          // API timeout for 0.5 seconds
+          await new Promise(resolve => setTimeout(resolve, 500));
         }
     
         setChartData(allData);
