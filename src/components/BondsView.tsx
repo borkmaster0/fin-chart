@@ -56,10 +56,8 @@ export default function BondView() {
   
     const loadChart = async () => {
       try {
-        const bondChartData = await fetchBondData("US1M", "ALL"); // replace with correct symbol if needed
-        const { history } = bondChartData;
-        // Map to format expected by lightweight-charts
-        console.log(bondChartData);
+        const bondChartData = await fetchBondData("US1M", "ALL");
+        
         const arrayLength = new Array(history.timestamp.length)
         const chartData = bondChartData.symbol.priceBars.map((item)=>({ 
           value: Number(item.close),
