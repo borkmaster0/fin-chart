@@ -22,7 +22,7 @@ export default function BondView() {
   const [quoteTab, setQuoteTab] = useState<'bonds' | 'bills'>('bonds');
   const chartContainerRef = useRef<HTMLDivElement | null>(null);
   const [chartLoaded, setChartLoaded] = useState(false);
-  const [chartData, setChartData] = useState<any[]>([]);
+  const [chartData, setChartData] = useState<Record<string, { time: number; value: number }[]>>({});  
 
   useEffect(() => {
     const storedDarkMode = localStorage.getItem('darkMode');
@@ -50,34 +50,51 @@ export default function BondView() {
     getBondData();
   }, []);
 
-  // Fetch bond data
+    // Fetch bond data
   useEffect(() => {
     if (activeTab !== 'charts' || chartLoaded) return;
   
-    const loadChart = async () => {
+    const symbols = [
+      'US1M', 'US2M', 'US3M', 'US4M', 'US6M',
+      'US1Y', 'US2Y', 'US3Y', 'US5Y', 'US7Y',
+      'US10Y', 'US20Y', 'US30Y'
+    ];
+  
+    const loadChartData = async () => {
       try {
-        const bondChartData = await fetchBondData("US1M", "ALL");
-        
-        const arrayLength = new Array(history.timestamp.length)
-        const chartData = bondChartData.symbol.priceBars.map((item)=>({ 
-          value: Number(item.close),
-          time: Number(item.tradeTimeinMills)/1000
-        })).slice(0, -1);
-        console.log(chartData);
-
-        setChartData(chartData);
+        const allData: Record<string, { time: number; value: number }[]> = {};
+        const symbols = [
+          'US1M', 'US2M', 'US3M', 'US4M', 'US6M',
+          'US1Y', 'US2Y', 'US3Y', 'US5Y', 'US7Y',
+          'US10Y', 'US20Y', 'US30Y'
+        ];
+    
+        for (const symbol of symbols) {
+          const response = await fetchBondData(symbol, 'ALL');
+          const seriesData = response.symbol.priceBars.map((item: any) => ({
+            value: Number(item.close),
+            time: Number(item.tradeTimeinMills) / 1000
+          })).slice(0, -1);
+          allData[symbol] = seriesData;
+    
+          // Wait for 1 second before the next request
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+    
+        setChartData(allData);
         setChartLoaded(true);
       } catch (err) {
         console.error('Error loading chart data:', err);
       }
     };
   
-    loadChart();
+    loadChartData();
   }, [activeTab, chartLoaded]);
+
 
   // Initialize charts
   useEffect(() => {
-    if (!chartContainerRef.current || chartData.length === 0) return;
+    if (!chartContainerRef.current || Object.keys(chartData).length === 0) return;
   
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
@@ -90,24 +107,34 @@ export default function BondView() {
         vertLines: { color: isDarkMode ? '#374151' : '#e5e7eb' },
         horzLines: { color: isDarkMode ? '#374151' : '#e5e7eb' },
       },
-      
+      crosshair: {
+        mode: CrosshairMode.Normal,
+      },
       priceScale: { borderVisible: false },
       timeScale: { borderVisible: false },
     });
   
-    const lineSeries = chart.addSeries(LineSeries, {
-      color: '#2962FF', 
-      title: 'US1M',
-      priceFormat: { 
-        type: 'percent',
-        precision: 5,
-        minMove: 1 / Math.pow(10, 5)
-      }
+    const colors = [
+      '#2962FF', '#FF6D00', '#D50000', '#00C853', '#AA00FF',
+      '#0091EA', '#C51162', '#FFD600', '#6200EA', '#00BFA5',
+      '#FF4081', '#3D5AFE', '#FFAB00'
+    ];
+  
+    Object.entries(chartData).forEach(([symbol, data], idx) => {
+      const series = chart.addLineSeries({
+        color: colors[idx % colors.length],
+        lineWidth: 2,
+        title: symbol,
+        priceFormat: {
+          type: 'percent',
+          precision: 5,
+          minMove: 1 / Math.pow(10, 5),
+        },
+      });
+  
+      series.setData(data);
     });
   
-    lineSeries.setData(chartData);
-  
-    // Resize chart on window resize
     const handleResize = () => {
       chart.resize(chartContainerRef.current!.clientWidth, 400);
     };
