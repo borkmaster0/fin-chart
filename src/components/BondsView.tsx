@@ -121,7 +121,7 @@ export default function BondView() {
     ];
   
     Object.entries(chartData).forEach(([symbol, data], idx) => {
-      const series = chart.addLineSeries({
+      const series = chart.addSeries(LineSeries, {
         color: colors[idx % colors.length],
         lineWidth: 2,
         title: symbol,
