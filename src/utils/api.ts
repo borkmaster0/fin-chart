@@ -103,19 +103,6 @@ export async function fetchQuickBondData(): Promise<QuickBondData> {
 }
 
 export async function fetchBondData(symbol: string, timeframe: string): Promise<BondData> {
-  switch (timeframe) {
-    case '1D':
-    case '5D':
-    case '1M':
-    case '3M':
-    case '6M':
-    case 'YTD':
-    case '1Y':
-    case '5Y':
-    case 'ALL':
-    default:
-      timeframe = '1D';
-  }
   const url = `https://webql-redesign.cnbcfm.com/graphql?operationName=getQuoteChartData&variables=%7B%22symbol%22%3A%22${symbol}%22%2C%22timeRange%22%3A%22${timeframe}%22%7D&extensions=%7B%22persistedQuery%22%3A%7B%22version%22%3A1%2C%22sha256Hash%22%3A%229e1670c29a10707c417a1efd327d4b2b1d456b77f1426e7e84fb7d399416bb6b%22%7D%7D`
   try {
     const response = await fetch(url);
