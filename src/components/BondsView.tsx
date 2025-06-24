@@ -199,14 +199,14 @@ export default function BondView() {
                         <td className="px-4 py-2 text-right">{item.last}</td>
                         <td
                           className={`px-4 py-2 text-right ${
-                            item.change.startsWith('-') ? 'text-red-500' : 'text-green-600'
+                            item.change.startsWith('-') ? 'text-red-500' : item.change === "UNCH" ? '' : 'text-green-600'
                           }`}
                         >
                           {item.change}
                         </td>
                         <td
                           className={`px-4 py-2 text-right ${
-                            item.change_pct.startsWith('-') ? 'text-red-500' : 'text-green-600'
+                            item.change_pct.startsWith('-') ? 'text-red-500' : item.change === "UNCH" ? '' : 'text-green-600'
                           }`}
                         >
                           {item.change_pct}
