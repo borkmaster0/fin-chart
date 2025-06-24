@@ -126,7 +126,7 @@ export default function BondView() {
         lineWidth: 2,
         title: symbol,
         priceFormat: {
-          type: 'percent',
+          type: 'number',
           precision: 5,
           minMove: 1 / Math.pow(10, 5),
         },
