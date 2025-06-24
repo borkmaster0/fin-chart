@@ -304,7 +304,7 @@ export default function BondView() {
               </div>
             )}
             {activeTab === 'charts' && (
-              <div className="w-full h-[400px]" ref={chartContainerRef}></div>
+              <div className="w-full h-full" ref={chartContainerRef}></div>
             )}
           </>
         )}
