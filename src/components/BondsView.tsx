@@ -102,8 +102,8 @@ export default function BondView() {
       title: 'US1M',
       priceFormat: { 
         type: 'percent',
-        precision: 3,
-        minMove: 1 / Math.pow(10, 3)
+        precision: 5,
+        minMove: 1 / Math.pow(10, 5)
       }
     });
   
