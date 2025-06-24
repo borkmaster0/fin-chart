@@ -127,8 +127,8 @@ export default function BondView() {
         title: symbol,
         priceFormat: {
           type: 'number',
-          precision: 5,
-          minMove: 1 / Math.pow(10, 5),
+          precision: 3,
+          minMove: 1 / Math.pow(10, 3),
         },
       });
   
