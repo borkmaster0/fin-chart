@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { createChart, ISeriesApi, CandlestickSeries, ColorType, CrosshairMode } from 'lightweight-charts';
+import { createChart, ISeriesApi, LineSeries, ColorType, CrosshairMode } from 'lightweight-charts';
 import { fetchBondOrderBook, fetchBillOrderBook, fetchQuickBondData, fetchBondData } from '../utils/api';
 import { TreasuryBondOrderBook, TreasuryBillsOrderBook } from '../types/index';
 
@@ -22,7 +22,7 @@ export default function BondView() {
   const [quoteTab, setQuoteTab] = useState<'bonds' | 'bills'>('bonds');
   const chartContainerRef = useRef<HTMLDivElement | null>(null);
   const [chartLoaded, setChartLoaded] = useState(false);
-  const [candlestickData, setCandlestickData] = useState<any[]>([]);
+  const [chartData, setChartData] = useState<any[]>([]);
 
   useEffect(() => {
     const storedDarkMode = localStorage.getItem('darkMode');
@@ -56,21 +56,18 @@ export default function BondView() {
   
     const loadChart = async () => {
       try {
-        const bondChartData = await fetchBondData("US1M", "1D"); // replace with correct symbol if needed
+        const bondChartData = await fetchBondData("US1M", "ALL"); // replace with correct symbol if needed
         const { history } = bondChartData;
         // Map to format expected by lightweight-charts
         console.log(bondChartData);
         const arrayLength = new Array(history.timestamp.length)
         const chartData = bondChartData.symbol.priceBars.map((item)=>({ 
-          open: Number(item.open), 
-          high: Number(item.high), 
-          low: Number(item.low), 
-          close: Number(item.close),
-          time: Number(item.tradeTimeinMills)/100
+          value: Number(item.close),
+          time: Number(item.tradeTimeinMills)/1000
         })).slice(0, -1);
         console.log(chartData);
 
-        setCandlestickData(chartData);
+        setChartDataData(chartData);
         setChartLoaded(true);
       } catch (err) {
         console.error('Error loading chart data:', err);
@@ -82,7 +79,7 @@ export default function BondView() {
 
   // Initialize charts
   useEffect(() => {
-    if (!chartContainerRef.current || candlestickData.length === 0) return;
+    if (!chartContainerRef.current || chartData.length === 0) return;
   
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
@@ -100,15 +97,9 @@ export default function BondView() {
       timeScale: { borderVisible: false },
     });
   
-    const candleSeries = chart.addSeries(CandlestickSeries, {
-      upColor: '#26a69a',
-      downColor: '#ef5350',
-      borderVisible: false,
-      wickUpColor: '#26a69a',
-      wickDownColor: '#ef5350',
-    });
+    const lineSeries = chart.addSeries(LineSeries, { color: '#2962FF' });
   
-    candleSeries.setData(candlestickData);
+    lineSeries.setData(chartData);
   
     // Resize chart on window resize
     const handleResize = () => {
@@ -121,7 +112,7 @@ export default function BondView() {
       chart.remove();
       window.removeEventListener('resize', handleResize);
     };
-  }, [candlestickData, isDarkMode]);
+  }, [chartData, isDarkMode]);
 
   const containerClass = isDarkMode ? 'dark' : '';
 
