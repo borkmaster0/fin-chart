@@ -97,7 +97,15 @@ export default function BondView() {
       timeScale: { borderVisible: false },
     });
   
-    const lineSeries = chart.addSeries(LineSeries, { color: '#2962FF', title: 'US1M' });
+    const lineSeries = chart.addSeries(LineSeries, {
+      color: '#2962FF', 
+      title: 'US1M',
+      priceFormat: { 
+        type: 'percent',
+        precision: 3,
+        minMove: 1 / Math.pow(10, 3)
+      }
+    });
   
     lineSeries.setData(chartData);
   
