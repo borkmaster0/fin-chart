@@ -67,7 +67,7 @@ export default function BondView() {
         })).slice(0, -1);
         console.log(chartData);
 
-        setChartDataData(chartData);
+        setChartData(chartData);
         setChartLoaded(true);
       } catch (err) {
         console.error('Error loading chart data:', err);
