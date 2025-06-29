@@ -360,7 +360,7 @@ export async function fetchMarketDetails(seriesTicker: string, eventTicker: stri
     const marketDetails = data.event.markets.map(market => ({
       id: market.id,
       openDate: market.open_date,
-      title: market.yes_subtitle
+      title: market.yes_sub_title
     }));
     
     return { marketDetails };
