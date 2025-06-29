@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { createChart, ISeriesApi, LineSeries, ColorType, CrosshairMode, createYieldCurveChart } from 'lightweight-charts';
+import { createChart, ISeriesApi, LineSeries, ColorType, CrosshairMode } from 'lightweight-charts';
 import { fetchBondOrderBook, fetchBillOrderBook, fetchQuickBondData, fetchBondData } from '../utils/api';
 import { TreasuryBondOrderBook, TreasuryBillsOrderBook } from '../types/index';
 
@@ -16,13 +16,18 @@ type OutputData = {
     value: number;
 };
 
-function convertYieldData(data: BondItem[]): OutputData[] {
+type YieldData = {
+    symbol: string;
+    yield: string;
+};
+
+function convertYieldData(data: YieldData[]): OutputData[] {
     return data.map(item => {
-        // Extract the numeric part and the unit (M or Y) from the shortName
-        const symbolMatch = item.shortName.match(/US(\d+)([MY])/);
+        // Extract the numeric part and the unit (M or Y) from the symbol
+        const symbolMatch = item.symbol.match(/US(\d+)([MY])/);
         if (!symbolMatch) {
-            console.warn(`Could not parse symbol: ${item.shortName}. Skipping this item.`);
-            return null; // Or throw an error, depending on desired error handling
+            console.warn(`Could not parse symbol: ${item.symbol}. Skipping this item.`);
+            return null;
         }
 
         const value = parseInt(symbolMatch[1]);
@@ -34,18 +39,18 @@ function convertYieldData(data: BondItem[]): OutputData[] {
         } else if (unit === 'Y') {
             months = value * 12;
         } else {
-            console.warn(`Unknown unit in symbol: ${item.shortName}. Skipping this item.`);
+            console.warn(`Unknown unit in symbol: ${item.symbol}. Skipping this item.`);
             return null;
         }
 
         // Clean and convert the yield string to a number
-        const yieldValue = parseFloat(item.last.replace('%', ''));
+        const yieldValue = parseFloat(item.yield.replace('%', ''));
 
         return {
             time: months,
             value: yieldValue
         };
-    }).filter(item => item !== null) as OutputData[]; // Filter out any skipped items
+    }).filter(item => item !== null) as OutputData[];
 }
 
 export default function BondView() {
@@ -55,7 +60,7 @@ export default function BondView() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [bondOrderBook, setBondOrderBook] = useState<TreasuryBondOrderBook[]>([]);
   const [billOrderBook, setBillOrderBook] = useState<TreasuryBillsOrderBook[]>([]);
-  const [activeTab, setActiveTab] = useState<'overview' | 'quotes' | 'charts'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'quotes' | 'charts' | 'yield-curve'>('overview');
   const [quoteTab, setQuoteTab] = useState<'bonds' | 'bills'>('bonds');
   const chartContainerRef = useRef<HTMLDivElement | null>(null);
   const [chartLoaded, setChartLoaded] = useState(false);
@@ -73,8 +78,16 @@ export default function BondView() {
         setLoading(true);
         const quickData = await fetchQuickBondData();
         setBondData(quickData.data);
-        setYieldChartData(convertYieldData(quickData.data));
-        console.log(yieldChartData)
+        
+        // Create yield data from the bond data
+        const yieldData: YieldData[] = quickData.data.map(bond => ({
+          symbol: bond.shortName, // Assuming shortName contains the symbol like "US1M", "US2Y", etc.
+          yield: bond.last
+        }));
+        
+        const convertedData = convertYieldData(yieldData);
+        setYieldChartData(convertedData);
+        console.log('Converted yield data:', convertedData);
 
         const bondBook = await fetchBondOrderBook();
         setBondOrderBook(bondBook.notes);
@@ -133,6 +146,62 @@ export default function BondView() {
     loadChartData();
   }, [activeTab, chartLoaded]);
 
+  // Initialize yield curve chart
+  useEffect(() => {
+    if (!yieldCurveChart.current || yieldChartData.length === 0 || activeTab !== 'yield-curve') return;
+
+    const chart = createChart(yieldCurveChart.current, {
+      width: yieldCurveChart.current.clientWidth,
+      height: 400,
+      layout: {
+        background: { color: isDarkMode ? '#1f2937' : '#ffffff' },
+        textColor: isDarkMode ? '#cbd5e1' : '#111827',
+      },
+      grid: {
+        vertLines: { color: isDarkMode ? '#374151' : '#e5e7eb' },
+        horzLines: { color: isDarkMode ? '#374151' : '#e5e7eb' },
+      },
+      crosshair: {
+        mode: CrosshairMode.Normal,
+      },
+      priceScale: { 
+        borderVisible: false,
+        title: 'Yield (%)'
+      },
+      timeScale: { 
+        borderVisible: false,
+        title: 'Maturity (Months)'
+      },
+    });
+
+    const series = chart.addSeries(LineSeries, {
+      color: '#2962FF',
+      lineWidth: 3,
+      title: 'US Treasury Yield Curve',
+      priceFormat: {
+        type: 'number',
+        precision: 3,
+        minMove: 1 / Math.pow(10, 3),
+      },
+    });
+
+    // Sort data by time (months) to ensure proper curve
+    const sortedData = [...yieldChartData].sort((a, b) => a.time - b.time);
+    series.setData(sortedData);
+
+    chart.timeScale().fitContent();
+
+    const handleResize = () => {
+      chart.resize(yieldCurveChart.current!.clientWidth, 400);
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      chart.remove();
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [yieldChartData, isDarkMode, activeTab]);
 
   // Initialize charts
   useEffect(() => {
@@ -198,7 +267,7 @@ export default function BondView() {
 
         {/* Tabs */}
         <div className="flex space-x-4 mb-6 border-b border-gray-300 dark:border-gray-700">
-          {['overview', 'quotes', 'charts'].map((tab) => (
+          {['overview', 'quotes', 'charts', 'yield-curve'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab as any)}
@@ -208,7 +277,7 @@ export default function BondView() {
                   : 'border-transparent hover:text-blue-500 dark:hover:text-blue-300'
               }`}
             >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              {tab === 'yield-curve' ? 'Yield Curve' : tab.charAt(0).toUpperCase() + tab.slice(1)}
             </button>
           ))}
         </div>
@@ -258,7 +327,6 @@ export default function BondView() {
                     ))}
                   </tbody>
                 </table>
-                <div className="w-full h-[400px]"></div>
               </div>
             )}
 
@@ -348,6 +416,26 @@ export default function BondView() {
             )}
             {activeTab === 'charts' && (
               <div className="w-full h-full" ref={chartContainerRef}></div>
+            )}
+            {activeTab === 'yield-curve' && (
+              <div className="space-y-4">
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                    US Treasury Yield Curve
+                  </h3>
+                  <p className="text-sm text-blue-800 dark:text-blue-200">
+                    This chart shows the current yield curve for US Treasury securities, plotting yield against maturity in months.
+                    The yield curve is a key indicator of economic conditions and interest rate expectations.
+                  </p>
+                </div>
+                <div className="w-full h-[400px]" ref={yieldCurveChart}></div>
+                {yieldChartData.length > 0 && (
+                  <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+                    <p>Data points: {yieldChartData.length} treasury securities</p>
+                    <p>Maturity range: {Math.min(...yieldChartData.map(d => d.time))} - {Math.max(...yieldChartData.map(d => d.time))} months</p>
+                  </div>
+                )}
+              </div>
             )}
           </>
         )}
