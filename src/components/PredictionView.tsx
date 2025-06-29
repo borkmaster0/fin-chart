@@ -538,7 +538,7 @@ const PredictionView: React.FC = () => {
                                   {/* NO Order Book (converted to YES sell orders) */}
                                   <div className="bg-white dark:bg-slate-800 rounded-lg p-4">
                                     <h5 className="text-sm font-semibold text-red-700 dark:text-red-300 mb-3 text-center">
-                                      NO Orders (YES Sell Orders)
+                                      NO Orders
                                     </h5>
                                     <div className="space-y-1">
                                       <div className="grid grid-cols-2 gap-2 text-xs font-medium text-slate-600 dark:text-slate-400 pb-2 border-b border-slate-200 dark:border-slate-600">
