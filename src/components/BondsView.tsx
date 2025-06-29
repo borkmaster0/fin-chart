@@ -156,7 +156,7 @@ export default function BondView() {
         handleScroll: false, handleScale: false,
     }
 
-    const lineSeries = chart.addSeries(LineSeries, { color: '#2962FF' });
+    const lineSeries = chart.addSeries(LineSeries);
 
     // Sort data by time (months) to ensure proper curve
     const sortedData = [...yieldChartData].sort((a, b) => a.time - b.time);
