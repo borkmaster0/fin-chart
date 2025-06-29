@@ -154,7 +154,7 @@ export default function BondView() {
         layout: { textColor: 'black', background: { type: 'solid', color: 'white' } },
         yieldCurve: { baseResolution: 1, minimumTimeRange: 10, startTimeRange: 3 },
         handleScroll: false, handleScale: false,
-    }
+    });
 
     const lineSeries = chart.addSeries(LineSeries);
 
