@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { TrendingUp, Calendar, Tag, Search, Filter, ExternalLink, Loader2, AlertTriangle, DollarSign, BarChart3, Users, Clock, ArrowLeft, TrendingDown, ChevronDown, ChevronUp } from 'lucide-react';
-import { fetchOrderBook, OrderBookResponse } from '../utils/api';
+import { createChart, ISeriesApi, CandlestickSeries, ColorType, CrosshairMode } from 'lightweight-charts';
+import { fetchOrderBook, OrderBookResponse, fetchMarketDetails, fetchCandlestickData, CandlestickResponse } from '../utils/api';
 
 interface PredictionEvent {
   event_ticker: string;
@@ -54,6 +55,145 @@ interface EventDetailResponse {
   markets: Market[];
 }
 
+interface MarketCandlestickData {
+  marketId: string;
+  marketTitle: string;
+  candlesticks: CandlestickResponse;
+}
+
+// Candlestick Chart Component
+interface CandlestickChartProps {
+  candlestickData: MarketCandlestickData[];
+  isDarkMode: boolean;
+}
+
+const CandlestickChart: React.FC<CandlestickChartProps> = ({ candlestickData, isDarkMode }) => {
+  const chartRef = useRef<HTMLDivElement>(null);
+  const chartInstance = useRef<ReturnType<typeof createChart> | null>(null);
+  const seriesRefs = useRef<Record<string, ISeriesApi<'Candlestick'>>>({});
+
+  useEffect(() => {
+    if (!chartRef.current || candlestickData.length === 0) return;
+
+    const chart = createChart(chartRef.current, {
+      width: chartRef.current.clientWidth,
+      height: 400,
+      layout: {
+        background: { type: ColorType.Solid, color: isDarkMode ? '#1E293B' : '#FFFFFF' },
+        textColor: isDarkMode ? '#E2E8F0' : '#334155',
+      },
+      grid: {
+        vertLines: {
+          color: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.06)',
+        },
+        horzLines: {
+          color: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.06)',
+        },
+      },
+      rightPriceScale: {
+        borderColor: isDarkMode ? '#334155' : '#E2E8F0',
+        borderVisible: true,
+      },
+      crosshair: {
+        mode: CrosshairMode.Normal,
+      },
+      timeScale: {
+        borderColor: isDarkMode ? '#334155' : '#E2E8F0',
+        timeVisible: true,
+        secondsVisible: false,
+      }
+    });
+
+    chartInstance.current = chart;
+
+    // Chart colors for different markets
+    const colors = [
+      { upColor: '#10B981', downColor: '#EF4444', borderUpColor: '#10B981', borderDownColor: '#EF4444', wickUpColor: '#10B981', wickDownColor: '#EF4444' },
+      { upColor: '#3B82F6', downColor: '#F97316', borderUpColor: '#3B82F6', borderDownColor: '#F97316', wickUpColor: '#3B82F6', wickDownColor: '#F97316' },
+      { upColor: '#8B5CF6', downColor: '#EC4899', borderUpColor: '#8B5CF6', borderDownColor: '#EC4899', wickUpColor: '#8B5CF6', wickDownColor: '#EC4899' },
+      { upColor: '#06B6D4', downColor: '#F59E0B', borderUpColor: '#06B6D4', borderDownColor: '#F59E0B', wickUpColor: '#06B6D4', wickDownColor: '#F59E0B' },
+      { upColor: '#84CC16', downColor: '#DC2626', borderUpColor: '#84CC16', borderDownColor: '#DC2626', wickUpColor: '#84CC16', wickDownColor: '#DC2626' },
+    ];
+
+    // Add series for each market
+    candlestickData.forEach((marketData, index) => {
+      const colorSet = colors[index % colors.length];
+      
+      const series = chart.addSeries(CandlestickSeries, {
+        ...colorSet,
+        borderVisible: true,
+        wickVisible: true,
+        priceLineVisible: false,
+        title: marketData.marketTitle,
+        priceScaleId: 'right',
+        priceFormat: { 
+          type: 'price',
+          precision: 0,
+          minMove: 1
+        }
+      });
+
+      // Transform candlestick data for the chart
+      const chartData = marketData.candlesticks.candlesticks
+        .filter(candle => 
+          candle.price.open !== null && 
+          candle.price.high !== null && 
+          candle.price.low !== null && 
+          candle.price.close !== null
+        )
+        .map(candle => ({
+          time: candle.end_period_ts,
+          open: candle.price.open!,
+          high: candle.price.high!,
+          low: candle.price.low!,
+          close: candle.price.close!,
+        }))
+        .sort((a, b) => a.time - b.time);
+
+      if (chartData.length > 0) {
+        series.setData(chartData);
+        seriesRefs.current[marketData.marketId] = series;
+      }
+    });
+
+    chart.timeScale().fitContent();
+
+    const resizeObserver = new ResizeObserver(entries => {
+      for (let entry of entries) {
+        if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
+          chart.resize(entry.contentRect.width, entry.contentRect.height);
+        }
+      }
+    });
+
+    resizeObserver.observe(chartRef.current);
+
+    return () => {
+      resizeObserver.disconnect();
+      chart.remove();
+      chartInstance.current = null;
+      seriesRefs.current = {};
+    };
+  }, [candlestickData, isDarkMode]);
+
+  if (candlestickData.length === 0) {
+    return (
+      <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-8 text-center">
+        <BarChart3 className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+        <p className="text-slate-600 dark:text-slate-400">
+          No candlestick data available for this event.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative w-full h-full">
+      <div ref={chartRef} className="w-full h-full" />
+    </div>
+  );
+};
+
 const PredictionView: React.FC = () => {
   const [predictionData, setPredictionData] = useState<EventWithMarkets[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,6 +213,29 @@ const PredictionView: React.FC = () => {
   // State for order book data
   const [orderBookData, setOrderBookData] = useState<{ [ticker: string]: OrderBookResponse }>({});
   const [loadingOrderBooks, setLoadingOrderBooks] = useState<Set<string>>(new Set());
+
+  // State for candlestick data
+  const [candlestickData, setCandlestickData] = useState<MarketCandlestickData[]>([]);
+  const [isLoadingCandlesticks, setIsLoadingCandlesticks] = useState(false);
+  const [candlestickError, setCandlestickError] = useState<string | null>(null);
+
+  // Dark mode detection
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('darkMode') === 'true' || 
+        window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    const handleStorageChange = () => {
+      setIsDarkMode(localStorage.getItem('darkMode') === 'true');
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   // Get unique categories from the data
   const categories = React.useMemo(() => {
@@ -154,17 +317,87 @@ const PredictionView: React.FC = () => {
     }
   };
 
+  // Load candlestick data for all markets in an event
+  const loadCandlestickData = async (event: EventWithMarkets) => {
+    if (!event.markets || event.markets.length === 0) return;
+
+    setIsLoadingCandlesticks(true);
+    setCandlestickError(null);
+    setCandlestickData([]);
+
+    try {
+      // Step 1: Get market details to obtain market IDs
+      const { marketDetails } = await fetchMarketDetails(event.series_ticker, event.event_ticker);
+      
+      if (marketDetails.length === 0) {
+        throw new Error('No market details found');
+      }
+
+      // Step 2: Fetch candlestick data for each market ID with 10ms delay between calls
+      const candlestickResults: MarketCandlestickData[] = [];
+      const endTs = Math.floor(Date.now() / 1000);
+      const startTs = endTs - (30 * 24 * 60 * 60); // 30 days ago
+
+      for (let i = 0; i < marketDetails.length; i++) {
+        const marketDetail = marketDetails[i];
+        
+        try {
+          // Find corresponding market info for title
+          const marketInfo = event.markets.find(m => m.ticker.includes(event.series_ticker));
+          const marketTitle = marketInfo?.yes_sub_title || marketInfo?.title || `Market ${i + 1}`;
+
+          const candlestickResponse = await fetchCandlestickData(
+            event.series_ticker,
+            marketDetail.id,
+            startTs,
+            endTs,
+            60 // 1-hour intervals
+          );
+
+          if (candlestickResponse.candlesticks.length > 0) {
+            candlestickResults.push({
+              marketId: marketDetail.id,
+              marketTitle,
+              candlesticks: candlestickResponse
+            });
+          }
+
+          // Wait 10ms between API calls as requested
+          if (i < marketDetails.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 10));
+          }
+        } catch (error) {
+          console.error(`Failed to fetch candlestick data for market ${marketDetail.id}:`, error);
+          // Continue with other markets even if one fails
+        }
+      }
+
+      setCandlestickData(candlestickResults);
+    } catch (error) {
+      console.error('Failed to load candlestick data:', error);
+      setCandlestickError('Failed to load chart data. Please try again.');
+    } finally {
+      setIsLoadingCandlesticks(false);
+    }
+  };
+
   // Show detailed event view
   const showEventDetails = async (event: EventWithMarkets) => {
     setIsLoadingEventDetails(true);
     setSelectedEvent(event);
     setExpandedMarkets(new Set()); // Reset expanded markets when viewing new event
+    setCandlestickData([]); // Reset candlestick data
     
     try {
-      if (!event.markets) {
-        const markets = await fetchEventMarkets(event.event_ticker);
+      let markets = event.markets;
+      if (!markets) {
+        markets = await fetchEventMarkets(event.event_ticker);
         setSelectedEvent(prev => prev ? { ...prev, markets } : null);
       }
+
+      // Load candlestick data after markets are loaded
+      const eventWithMarkets = { ...event, markets };
+      await loadCandlestickData(eventWithMarkets);
     } catch (err) {
       setSelectedEvent(prev => prev ? { ...prev, marketsError: 'Failed to load market data' } : null);
     } finally {
@@ -178,6 +411,8 @@ const PredictionView: React.FC = () => {
     setIsLoadingEventDetails(false);
     setExpandedMarkets(new Set());
     setOrderBookData({}); // Clear order book data when going back
+    setCandlestickData([]); // Clear candlestick data when going back
+    setCandlestickError(null);
   };
 
   useEffect(() => {
@@ -294,6 +529,73 @@ const PredictionView: React.FC = () => {
               <ExternalLink className="h-4 w-4" />
             </a>
           </div>
+        </div>
+
+        {/* Candlestick Chart Section */}
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Price History</h2>
+            {candlestickData.length > 0 && (
+              <div className="text-sm text-slate-600 dark:text-slate-400">
+                {candlestickData.length} market{candlestickData.length !== 1 ? 's' : ''} • Last 30 days
+              </div>
+            )}
+          </div>
+          
+          {isLoadingCandlesticks ? (
+            <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-8 text-center">
+              <Loader2 className="w-8 h-8 text-primary mx-auto animate-spin mb-4" />
+              <p className="text-slate-600 dark:text-slate-400">Loading price history...</p>
+            </div>
+          ) : candlestickError ? (
+            <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-8 text-center">
+              <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto mb-4" />
+              <p className="text-slate-600 dark:text-slate-400">{candlestickError}</p>
+            </div>
+          ) : (
+            <div className="w-full h-[400px]">
+              <CandlestickChart 
+                candlestickData={candlestickData} 
+                isDarkMode={isDarkMode}
+              />
+            </div>
+          )}
+
+          {/* Chart Legend */}
+          {candlestickData.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-600">
+              <div className="flex flex-wrap gap-4">
+                {candlestickData.map((data, index) => {
+                  const colors = [
+                    { up: '#10B981', down: '#EF4444' },
+                    { up: '#3B82F6', down: '#F97316' },
+                    { up: '#8B5CF6', down: '#EC4899' },
+                    { up: '#06B6D4', down: '#F59E0B' },
+                    { up: '#84CC16', down: '#DC2626' },
+                  ];
+                  const colorSet = colors[index % colors.length];
+                  
+                  return (
+                    <div key={data.marketId} className="flex items-center gap-2">
+                      <div className="flex gap-1">
+                        <div 
+                          className="w-3 h-3 rounded-sm"
+                          style={{ backgroundColor: colorSet.up }}
+                        ></div>
+                        <div 
+                          className="w-3 h-3 rounded-sm"
+                          style={{ backgroundColor: colorSet.down }}
+                        ></div>
+                      </div>
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                        {data.marketTitle}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Markets Section */}
@@ -626,17 +928,6 @@ const PredictionView: React.FC = () => {
                       </div>
                     );
                   })}
-                </div>
-              </div>
-
-              {/* Placeholder for future features */}
-              <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-6">
-                <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">Charts & Analysis</h2>
-                <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-8 text-center">
-                  <BarChart3 className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-                  <p className="text-slate-600 dark:text-slate-400">
-                    Price charts and additional analysis tools will be available here soon.
-                  </p>
                 </div>
               </div>
             </>
