@@ -361,7 +361,7 @@ const ChartExpressionApp: React.FC = () => {
     <div className="max-w-4xl mx-auto px-4 py-8">
       <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
         <Calculator className="w-6 h-6 text-blue-500" />
-        Expression Chart
+        Equity Expression Chart
       </h2>
 
       <div className="flex flex-col md:flex-row items-center gap-4 mb-6">
