@@ -53,7 +53,7 @@ const PredictionView: React.FC = () => {
         setLoading(true);
         setError(null);
         
-        const response = await fetch('https://api.elections.kalshi.com/trade-api/v2/events?limit=200');
+        const response = await fetch('https://corsproxy.io/?https://api.elections.kalshi.com/trade-api/v2/events?limit=200');
         
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
