@@ -336,7 +336,7 @@ const PredictionView: React.FC = () => {
       // Step 2: Fetch candlestick data for each market ID with 10ms delay between calls
       const candlestickResults: MarketCandlestickData[] = [];
       const endTs = Math.floor(Date.now() / 1000);
-      const startTs = endTs - (30 * 24 * 60 * 60); // 30 days ago
+      const periodInterval = 60; // 1-hour intervals
 
       for (let i = 0; i < marketDetails.length; i++) {
         const marketDetail = marketDetails[i];
@@ -346,12 +346,22 @@ const PredictionView: React.FC = () => {
           const marketInfo = event.markets.find(m => m.ticker.includes(event.series_ticker));
           const marketTitle = marketInfo?.yes_sub_title || marketInfo?.title || `Market ${i + 1}`;
 
+          // Calculate proper start_ts based on API requirements
+          // Maximum history allowed: 5000 period_intervals (60 minutes each)
+          const maxHistoryStartTs = endTs - (5000 * periodInterval * 60); // 5000 intervals of 60 minutes, converted to seconds
+          
+          // Get market open date and convert to timestamp
+          const marketOpenTs = Math.floor(new Date(marketDetail.openDate).getTime() / 1000);
+          
+          // Use the later of the two timestamps to ensure we're within API limits and after market opening
+          const startTs = Math.max(maxHistoryStartTs, marketOpenTs);
+
           const candlestickResponse = await fetchCandlestickData(
             event.series_ticker,
             marketDetail.id,
             startTs,
             endTs,
-            60 // 1-hour intervals
+            periodInterval
           );
           console.log(candlestickResponse);
 
