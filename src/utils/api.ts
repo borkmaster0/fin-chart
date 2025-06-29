@@ -385,7 +385,11 @@ export async function fetchCandlestickData(
   endTs: number,
   periodInterval: number = 60
 ): Promise<CandlestickResponse> {
-  const url = `https://corsproxy.io/?https://api.elections.kalshi.com/v1/series/${encodeURIComponent(seriesTicker)}/markets/${encodeURIComponent(seriesId)}/candlesticks?start_ts=${startTs}&end_ts=${endTs}&period_interval=${periodInterval}`;
+  // Round timestamps to the nearest hour boundaries for 60-minute candles
+  const roundedStartTs = Math.floor(startTs / 3600) * 3600;
+  const roundedEndTs = Math.ceil(endTs / 3600) * 3600;
+  
+  const url = `https://corsproxy.io/?https://api.elections.kalshi.com/v1/series/${encodeURIComponent(seriesTicker)}/markets/${encodeURIComponent(seriesId)}/candlesticks?start_ts=${roundedStartTs}&end_ts=${roundedEndTs}&period_interval=${periodInterval}`;
   
   try {
     const response = await fetch(url);
