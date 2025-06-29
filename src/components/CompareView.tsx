@@ -373,7 +373,7 @@ const ChartExpressionApp: React.FC = () => {
           The yield curve is a key indicator of economic conditions and interest rate expectations.
         </p>
       </div>
-      <div className="h-[100px]"></div>
+      <div className="h-[50px]"></div>
       <div className="flex flex-col md:flex-row items-center gap-4 mb-6">
         <input
           value={expression}
