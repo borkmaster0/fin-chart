@@ -23,6 +23,24 @@ export interface OrderBookResponse {
   order_books: OrderBook[];
 }
 
+export interface MarketDetail {
+  id: string;
+  ticker_name: string;
+  create_date: string;
+  list_date: string;
+  open_date: string;
+  close_date: string;
+  expiration_date: string;
+}
+
+export interface EventDetailResponse {
+  event: {
+    ticker: string;
+    series_ticker: string;
+    markets: MarketDetail[];
+  };
+}
+
 export async function fetchMostActiveStocks(symbol: string): Promise<StockArray> {
   const url = `https://corsproxy.io/?https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?count=5&formatted=true&scrIds=MOST_ACTIVES&sortField=&sortType=&start=0&useRecordsResponse=false&fields=symbol`;
   try {
@@ -298,5 +316,36 @@ export async function fetchOrderBook(marketTickers: string): Promise<OrderBookRe
   } catch (error) {
     console.error('Error fetching order book data:', error);
     throw new Error(error instanceof Error ? error.message : 'Failed to fetch order book data');
+  }
+}
+
+/**
+ * Fetch detailed market information for candlestick data preparation
+ * @param seriesTicker - The series ticker (e.g., "KXLALEADEROUT")
+ * @param eventTicker - The event ticker (e.g., "KXLALEADEROUT-35")
+ * @returns Promise<{ marketDetails: Array<{ id: string, openDate: string }> }>
+ */
+export async function fetchMarketDetails(seriesTicker: string, eventTicker: string): Promise<{ marketDetails: Array<{ id: string, openDate: string }> }> {
+  const url = `https://corsproxy.io/?https://api.elections.kalshi.com/v1/series/${encodeURIComponent(seriesTicker)}/events/${encodeURIComponent(eventTicker)}`;
+  
+  try {
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    
+    const data: EventDetailResponse = await response.json();
+    
+    // Extract only the ID and open date from each market
+    const marketDetails = data.event.markets.map(market => ({
+      id: market.id,
+      openDate: market.open_date
+    }));
+    
+    return { marketDetails };
+  } catch (error) {
+    console.error('Error fetching market details:', error);
+    throw new Error(error instanceof Error ? error.message : 'Failed to fetch market details');
   }
 }
