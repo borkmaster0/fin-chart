@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { createChart, ISeriesApi, LineSeries, ColorType, CrosshairMode, createYieldCurveChart } from 'lightweight-charts';
+import { createChart, ISeriesApi, LineSeries, ColorType, CrosshairMode } from 'lightweight-charts';
 import { fetchBondOrderBook, fetchBillOrderBook, fetchQuickBondData, fetchBondData } from '../utils/api';
 import { TreasuryBondOrderBook, TreasuryBillsOrderBook } from '../types/index';
 
@@ -69,6 +69,14 @@ export default function BondView() {
   const yieldCurveChart = useRef<HTMLDivElement | null>(null);
   const [yieldChartLoaded, setYieldChartLoaded] = useState(false);
   const [yieldChartData, setYieldChartData] = useState<OutputData[]>([]);
+  
+  // New state for chart selection
+  const [selectedSymbols, setSelectedSymbols] = useState<string[]>(['US10Y', 'US2Y']);
+  const [availableSymbols] = useState([
+    'US1M', 'US2M', 'US3M', 'US4M', 'US6M',
+    'US1Y', 'US2Y', 'US3Y', 'US5Y', 'US7Y',
+    'US10Y', 'US20Y', 'US30Y'
+  ]);
 
   useEffect(() => {
     const storedDarkMode = localStorage.getItem('darkMode');
@@ -109,22 +117,12 @@ export default function BondView() {
   useEffect(() => {
     if (activeTab !== 'charts' || chartLoaded) return;
   
-    const symbols = [
-      'US1M', 'US2M', 'US3M', 'US4M', 'US6M',
-      'US1Y', 'US2Y', 'US3Y', 'US5Y', 'US7Y',
-      'US10Y', 'US20Y', 'US30Y'
-    ];
-  
     const loadChartData = async () => {
       try {
         const allData: Record<string, { time: number; value: number }[]> = {};
-        const symbols = [
-          'US1M', 'US2M', 'US3M', 'US4M', 'US6M',
-          'US1Y', 'US2Y', 'US3Y', 'US5Y', 'US7Y',
-          'US10Y', 'US20Y', 'US30Y'
-        ];
-    
-        for (const symbol of symbols) {
+        
+        // Only load data for selected symbols
+        for (const symbol of selectedSymbols) {
           const response = await fetchBondData(symbol, 'ALL');
           const seriesData = response.symbol.priceBars.map((item: any) => ({
             value: Number(item.close),
@@ -144,19 +142,39 @@ export default function BondView() {
     };
   
     loadChartData();
-  }, [activeTab, chartLoaded]);
+  }, [activeTab, selectedSymbols]); // Added selectedSymbols as dependency
 
   // Initialize yield curve chart
   useEffect(() => {
     if (!yieldCurveChart.current || yieldChartData.length === 0 || activeTab !== 'yield-curve') return;
 
-    const chart = createYieldCurveChart(yieldCurveChart.current, {
-        layout: { textColor: 'black', background: { type: 'solid', color: 'white' } },
-        yieldCurve: { baseResolution: 1, minimumTimeRange: 10, startTimeRange: 3 },
-        handleScroll: false, handleScale: false,
+    const chart = createChart(yieldCurveChart.current, {
+      width: yieldCurveChart.current.clientWidth,
+      height: 400,
+      layout: {
+        background: { type: ColorType.Solid, color: isDarkMode ? '#1f2937' : '#ffffff' },
+        textColor: isDarkMode ? '#cbd5e1' : '#111827',
+      },
+      grid: {
+        vertLines: { color: isDarkMode ? '#374151' : '#e5e7eb' },
+        horzLines: { color: isDarkMode ? '#374151' : '#e5e7eb' },
+      },
+      crosshair: {
+        mode: CrosshairMode.Normal,
+      },
+      priceScale: { borderVisible: false },
+      timeScale: { borderVisible: false },
     });
 
-    const lineSeries = chart.addSeries(LineSeries);
+    const lineSeries = chart.addLineSeries({
+      color: '#2962FF',
+      lineWidth: 3,
+      priceFormat: {
+        type: 'number',
+        precision: 3,
+        minMove: 1 / Math.pow(10, 3),
+      },
+    });
 
     // Sort data by time (months) to ensure proper curve
     const sortedData = [...yieldChartData].sort((a, b) => a.time - b.time);
@@ -204,19 +222,23 @@ export default function BondView() {
       '#FF4081', '#3D5AFE', '#FFAB00'
     ];
   
-    Object.entries(chartData).forEach(([symbol, data], idx) => {
-      const series = chart.addSeries(LineSeries, {
-        color: colors[idx % colors.length],
-        lineWidth: 2,
-        title: symbol,
-        priceFormat: {
-          type: 'number',
-          precision: 3,
-          minMove: 1 / Math.pow(10, 3),
-        },
-      });
-  
-      series.setData(data);
+    // Only create series for selected symbols
+    selectedSymbols.forEach((symbol, idx) => {
+      const data = chartData[symbol];
+      if (data) {
+        const series = chart.addLineSeries({
+          color: colors[idx % colors.length],
+          lineWidth: 2,
+          title: symbol,
+          priceFormat: {
+            type: 'number',
+            precision: 3,
+            minMove: 1 / Math.pow(10, 3),
+          },
+        });
+    
+        series.setData(data);
+      }
     });
   
     const handleResize = () => {
@@ -229,9 +251,31 @@ export default function BondView() {
       chart.remove();
       window.removeEventListener('resize', handleResize);
     };
-  }, [chartData, isDarkMode]);
+  }, [chartData, isDarkMode, selectedSymbols]);
 
   const containerClass = isDarkMode ? 'dark' : '';
+
+  const handleSymbolToggle = (symbol: string) => {
+    setSelectedSymbols(prev => {
+      if (prev.includes(symbol)) {
+        return prev.filter(s => s !== symbol);
+      } else {
+        return [...prev, symbol];
+      }
+    });
+    // Reset chart loaded state to trigger reload with new selection
+    setChartLoaded(false);
+  };
+
+  const selectAllSymbols = () => {
+    setSelectedSymbols([...availableSymbols]);
+    setChartLoaded(false);
+  };
+
+  const clearAllSymbols = () => {
+    setSelectedSymbols([]);
+    setChartLoaded(false);
+  };
 
   return (
     <div className={containerClass}>
@@ -388,7 +432,67 @@ export default function BondView() {
               </div>
             )}
             {activeTab === 'charts' && (
-              <div className="w-full h-full" ref={chartContainerRef}></div>
+              <div className="space-y-4">
+                {/* Symbol Selector */}
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold">Select Treasury Securities to Display</h3>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={selectAllSymbols}
+                        className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                      >
+                        Select All
+                      </button>
+                      <button
+                        onClick={clearAllSymbols}
+                        className="px-3 py-1 text-sm bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
+                      >
+                        Clear All
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 md:grid-cols-6 lg:grid-cols-13 gap-2">
+                    {availableSymbols.map((symbol) => (
+                      <label
+                        key={symbol}
+                        className={`flex items-center justify-center p-2 rounded cursor-pointer transition-colors ${
+                          selectedSymbols.includes(symbol)
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedSymbols.includes(symbol)}
+                          onChange={() => handleSymbolToggle(symbol)}
+                          className="sr-only"
+                        />
+                        <span className="text-sm font-medium">{symbol}</span>
+                      </label>
+                    ))}
+                  </div>
+                  
+                  <div className="mt-3 text-sm text-gray-600 dark:text-gray-400">
+                    Selected: {selectedSymbols.length} of {availableSymbols.length} securities
+                    {selectedSymbols.length > 0 && (
+                      <span className="ml-2">({selectedSymbols.join(', ')})</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Chart */}
+                {selectedSymbols.length > 0 ? (
+                  <div className="w-full h-full" ref={chartContainerRef}></div>
+                ) : (
+                  <div className="flex items-center justify-center h-64 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <p className="text-gray-500 dark:text-gray-400">
+                      Select one or more treasury securities above to display their charts
+                    </p>
+                  </div>
+                )}
+              </div>
             )}
             {activeTab === 'yield-curve' && (
               <div className="space-y-4">
