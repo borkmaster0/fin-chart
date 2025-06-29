@@ -124,7 +124,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ candlestickData, is
         borderVisible: true,
         wickVisible: true,
         priceLineVisible: false,
-        title: marketData.marketTitle,
+        title: marketData.title,
         priceScaleId: 'right',
         priceFormat: { 
           type: 'price',
