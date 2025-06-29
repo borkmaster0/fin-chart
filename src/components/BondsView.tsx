@@ -23,8 +23,9 @@ type YieldData = {
 
 function convertYieldData(data: YieldData[]): OutputData[] {
     return data.map(item => {
-        // Extract the numeric part and the unit (M or Y) from the symbol
-        const symbolMatch = item.symbol.match(/US(\d+)([MY])/);
+        // Extract the numeric part and the unit (MO or YR) from the symbol
+        // Updated regex to handle "US 1-MO", "US 3-YR" format
+        const symbolMatch = item.symbol.match(/US\s+(\d+)-?(MO|YR)/);
         console.log(symbolMatch, item);
         if (!symbolMatch) {
             console.warn(`Could not parse symbol: ${item.symbol}. Skipping this item.`);
@@ -35,9 +36,9 @@ function convertYieldData(data: YieldData[]): OutputData[] {
         const unit = symbolMatch[2];
 
         let months: number;
-        if (unit === 'M') {
+        if (unit === 'MO') {
             months = value;
-        } else if (unit === 'Y') {
+        } else if (unit === 'YR') {
             months = value * 12;
         } else {
             console.warn(`Unknown unit in symbol: ${item.symbol}. Skipping this item.`);
@@ -82,7 +83,7 @@ export default function BondView() {
         
         // Create yield data from the bond data
         const yieldData: YieldData[] = quickData.data.map(bond => ({
-          symbol: bond.shortName, // Assuming shortName contains the symbol like "US1M", "US2Y", etc.
+          symbol: bond.shortName, // Assuming shortName contains the symbol like "US 1-MO", "US 2-YR", etc.
           yield: bond.last
         }));
         
