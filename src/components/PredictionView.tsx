@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, Calendar, Tag, Search, Filter, ExternalLink, Loader2, AlertTriangle } from 'lucide-react';
+import { TrendingUp, Calendar, Tag, Search, Filter, ExternalLink, Loader2, AlertTriangle, DollarSign, BarChart3, Users, Clock } from 'lucide-react';
 
 interface PredictionEvent {
   event_ticker: string;
@@ -11,18 +11,57 @@ interface PredictionEvent {
   category: string;
 }
 
+interface Market {
+  ticker: string;
+  event_ticker: string;
+  market_type: string;
+  title: string;
+  subtitle: string;
+  yes_sub_title: string;
+  no_sub_title: string;
+  open_time: string;
+  close_time: string;
+  status: string;
+  yes_bid: number;
+  yes_ask: number;
+  no_bid: number;
+  no_ask: number;
+  last_price: number;
+  previous_price: number;
+  volume: number;
+  volume_24h: number;
+  liquidity: number;
+  open_interest: number;
+  custom_strike?: {
+    [key: string]: string;
+  };
+  rules_primary: string;
+}
+
+interface EventWithMarkets extends PredictionEvent {
+  markets?: Market[];
+  isLoadingMarkets?: boolean;
+  marketsError?: string;
+}
+
 interface PredictionData {
   events: PredictionEvent[];
 }
 
+interface EventDetailResponse {
+  event: PredictionEvent;
+  markets: Market[];
+}
+
 const PredictionView: React.FC = () => {
-  const [predictionData, setPredictionData] = useState<PredictionEvent[]>([]);
+  const [predictionData, setPredictionData] = useState<EventWithMarkets[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(20);
+  const [itemsPerPage] = useState(10); // Reduced for better performance with market data
+  const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set());
 
   // Get unique categories from the data
   const categories = React.useMemo(() => {
@@ -46,6 +85,62 @@ const PredictionView: React.FC = () => {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentEvents = filteredEvents.slice(startIndex, endIndex);
+
+  // Fetch market details for a specific event
+  const fetchEventMarkets = async (eventTicker: string) => {
+    try {
+      const response = await fetch(`https://corsproxy.io/?https://api.elections.kalshi.com/trade-api/v2/events/${eventTicker}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      
+      const data: EventDetailResponse = await response.json();
+      return data.markets || [];
+    } catch (err) {
+      console.error(`Error fetching markets for ${eventTicker}:`, err);
+      throw err;
+    }
+  };
+
+  // Toggle event expansion and load markets if needed
+  const toggleEventExpansion = async (eventTicker: string) => {
+    const newExpanded = new Set(expandedEvents);
+    
+    if (expandedEvents.has(eventTicker)) {
+      newExpanded.delete(eventTicker);
+    } else {
+      newExpanded.add(eventTicker);
+      
+      // Load markets if not already loaded
+      const event = predictionData.find(e => e.event_ticker === eventTicker);
+      if (event && !event.markets && !event.isLoadingMarkets) {
+        // Set loading state
+        setPredictionData(prev => prev.map(e => 
+          e.event_ticker === eventTicker 
+            ? { ...e, isLoadingMarkets: true }
+            : e
+        ));
+        
+        try {
+          const markets = await fetchEventMarkets(eventTicker);
+          setPredictionData(prev => prev.map(e => 
+            e.event_ticker === eventTicker 
+              ? { ...e, markets, isLoadingMarkets: false }
+              : e
+          ));
+        } catch (err) {
+          setPredictionData(prev => prev.map(e => 
+            e.event_ticker === eventTicker 
+              ? { ...e, isLoadingMarkets: false, marketsError: 'Failed to load market data' }
+              : e
+          ));
+        }
+      }
+    }
+    
+    setExpandedEvents(newExpanded);
+  };
 
   useEffect(() => {
     const fetchPredictionData = async () => {
@@ -88,6 +183,25 @@ const PredictionView: React.FC = () => {
       'Science': 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300',
     };
     return colors[category as keyof typeof colors] || 'bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300';
+  };
+
+  const formatPrice = (price: number): string => {
+    return `${price}¢`;
+  };
+
+  const formatVolume = (volume: number): string => {
+    if (volume >= 1000000) {
+      return `${(volume / 1000000).toFixed(1)}M`;
+    } else if (volume >= 1000) {
+      return `${(volume / 1000).toFixed(1)}K`;
+    }
+    return volume.toString();
+  };
+
+  const getPriceChangeColor = (current: number, previous: number): string => {
+    if (current > previous) return 'text-green-600 dark:text-green-400';
+    if (current < previous) return 'text-red-600 dark:text-red-400';
+    return 'text-slate-600 dark:text-slate-400';
   };
 
   if (loading) {
@@ -177,79 +291,189 @@ const PredictionView: React.FC = () => {
         </div>
       </div>
 
-      {/* Prediction Markets Grid */}
+      {/* Prediction Markets List */}
       {currentEvents.length > 0 ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="space-y-6 mb-8">
           {currentEvents.map((event) => (
             <div
               key={event.event_ticker}
-              className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-6 hover:shadow-md transition-shadow"
+              className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden"
             >
-              {/* Header */}
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className={`px-2 py-1 rounded-md text-xs font-medium ${getCategoryColor(event.category)}`}>
-                      {event.category}
-                    </span>
-                    {event.mutually_exclusive && (
-                      <span className="px-2 py-1 rounded-md text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
-                        Exclusive
+              {/* Event Header */}
+              <div className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className={`px-2 py-1 rounded-md text-xs font-medium ${getCategoryColor(event.category)}`}>
+                        {event.category}
                       </span>
+                      {event.mutually_exclusive && (
+                        <span className="px-2 py-1 rounded-md text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
+                          Exclusive
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2 leading-tight">
+                      {event.title}
+                    </h3>
+                    {event.sub_title && (
+                      <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                        <Calendar className="h-4 w-4" />
+                        <span>{event.sub_title}</span>
+                      </div>
                     )}
                   </div>
-                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2 leading-tight">
-                    {event.title}
-                  </h3>
-                  {event.sub_title && (
-                    <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                      <Calendar className="h-4 w-4" />
-                      <span>{event.sub_title}</span>
+                </div>
+
+                {/* Metadata */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4 text-sm">
+                    <div className="flex items-center gap-2">
+                      <Tag className="h-4 w-4 text-slate-400" />
+                      <span className="font-mono text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded">
+                        {event.event_ticker}
+                      </span>
+                    </div>
+                    
+                    <a
+                      href={`https://kalshi.com/events/${event.event_ticker}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-primary hover:text-primary-dark font-medium transition-colors"
+                    >
+                      <span>View on Kalshi</span>
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
+
+                  <button
+                    onClick={() => toggleEventExpansion(event.event_ticker)}
+                    className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-primary hover:text-primary-dark bg-primary/10 hover:bg-primary/20 rounded-md transition-colors"
+                  >
+                    <BarChart3 className="h-4 w-4" />
+                    {expandedEvents.has(event.event_ticker) ? 'Hide Markets' : 'Show Markets'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Markets Section */}
+              {expandedEvents.has(event.event_ticker) && (
+                <div className="border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/50">
+                  {event.isLoadingMarkets ? (
+                    <div className="p-6 text-center">
+                      <Loader2 className="w-6 h-6 text-primary mx-auto animate-spin mb-2" />
+                      <p className="text-sm text-slate-600 dark:text-slate-400">Loading market data...</p>
+                    </div>
+                  ) : event.marketsError ? (
+                    <div className="p-6 text-center">
+                      <AlertTriangle className="w-6 h-6 text-amber-500 mx-auto mb-2" />
+                      <p className="text-sm text-slate-600 dark:text-slate-400">{event.marketsError}</p>
+                    </div>
+                  ) : event.markets && event.markets.length > 0 ? (
+                    <div className="p-6">
+                      <h4 className="text-sm font-semibold text-slate-900 dark:text-white mb-4">
+                        Active Markets ({event.markets.length})
+                      </h4>
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        {event.markets.map((market) => (
+                          <div
+                            key={market.ticker}
+                            className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4"
+                          >
+                            {/* Market Header */}
+                            <div className="flex items-start justify-between mb-3">
+                              <div className="flex-1">
+                                <h5 className="font-medium text-slate-900 dark:text-white mb-1">
+                                  {market.yes_sub_title || market.title || 'Market'}
+                                </h5>
+                                {market.custom_strike && (
+                                  <div className="text-xs text-slate-600 dark:text-slate-400">
+                                    {Object.entries(market.custom_strike).map(([key, value]) => (
+                                      <span key={key}>{key}: {value}</span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                              <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                market.status === 'active' 
+                                  ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+                                  : 'bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300'
+                              }`}>
+                                {market.status}
+                              </span>
+                            </div>
+
+                            {/* Price Information */}
+                            <div className="grid grid-cols-2 gap-4 mb-3">
+                              <div className="text-center">
+                                <div className="text-xs text-slate-600 dark:text-slate-400 mb-1">YES</div>
+                                <div className="text-lg font-bold text-green-600 dark:text-green-400">
+                                  {formatPrice(market.last_price)}
+                                </div>
+                                <div className="text-xs text-slate-500 dark:text-slate-400">
+                                  Bid: {formatPrice(market.yes_bid)} | Ask: {formatPrice(market.yes_ask)}
+                                </div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-xs text-slate-600 dark:text-slate-400 mb-1">NO</div>
+                                <div className="text-lg font-bold text-red-600 dark:text-red-400">
+                                  {formatPrice(100 - market.last_price)}
+                                </div>
+                                <div className="text-xs text-slate-500 dark:text-slate-400">
+                                  Bid: {formatPrice(market.no_bid)} | Ask: {formatPrice(market.no_ask)}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Market Stats */}
+                            <div className="grid grid-cols-3 gap-3 text-xs">
+                              <div className="text-center">
+                                <div className="flex items-center justify-center gap-1 text-slate-600 dark:text-slate-400 mb-1">
+                                  <BarChart3 className="h-3 w-3" />
+                                  <span>Volume</span>
+                                </div>
+                                <div className="font-medium text-slate-900 dark:text-white">
+                                  {formatVolume(market.volume)}
+                                </div>
+                              </div>
+                              <div className="text-center">
+                                <div className="flex items-center justify-center gap-1 text-slate-600 dark:text-slate-400 mb-1">
+                                  <Users className="h-3 w-3" />
+                                  <span>Open Interest</span>
+                                </div>
+                                <div className="font-medium text-slate-900 dark:text-white">
+                                  {formatVolume(market.open_interest)}
+                                </div>
+                              </div>
+                              <div className="text-center">
+                                <div className="flex items-center justify-center gap-1 text-slate-600 dark:text-slate-400 mb-1">
+                                  <DollarSign className="h-3 w-3" />
+                                  <span>Liquidity</span>
+                                </div>
+                                <div className="font-medium text-slate-900 dark:text-white">
+                                  {formatVolume(market.liquidity)}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Market Dates */}
+                            <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-400">
+                              <div className="flex items-center gap-1 mb-1">
+                                <Clock className="h-3 w-3" />
+                                <span>Closes: {new Date(market.close_time).toLocaleDateString()}</span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-6 text-center">
+                      <p className="text-sm text-slate-600 dark:text-slate-400">No active markets found for this event.</p>
                     </div>
                   )}
                 </div>
-              </div>
-
-              {/* Metadata */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-sm">
-                  <Tag className="h-4 w-4 text-slate-400" />
-                  <span className="text-slate-600 dark:text-slate-400">Event Ticker:</span>
-                  <span className="font-mono text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded">
-                    {event.event_ticker}
-                  </span>
-                </div>
-                
-                <div className="flex items-center gap-2 text-sm">
-                  <TrendingUp className="h-4 w-4 text-slate-400" />
-                  <span className="text-slate-600 dark:text-slate-400">Series:</span>
-                  <span className="font-mono text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded">
-                    {event.series_ticker}
-                  </span>
-                </div>
-
-                {event.collateral_return_type && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="text-slate-600 dark:text-slate-400">Return Type:</span>
-                    <span className="text-slate-900 dark:text-white">
-                      {event.collateral_return_type}
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Action */}
-              <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
-                <a
-                  href={`https://kalshi.com/events/${event.event_ticker}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-primary hover:text-primary-dark font-medium text-sm transition-colors"
-                >
-                  <span>View on Kalshi</span>
-                  <ExternalLink className="h-4 w-4" />
-                </a>
-              </div>
+              )}
             </div>
           ))}
         </div>
