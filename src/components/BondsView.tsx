@@ -11,6 +11,48 @@ interface BondItem {
   maturityDate: string;
 }
 
+type InputData = {
+    symbol: string;
+    yield: string;
+};
+
+type OutputData = {
+    time: number;
+    value: number;
+};
+
+function convertYieldData(data: InputData[]): OutputData[] {
+    return data.map(item => {
+        // Extract the numeric part and the unit (M or Y) from the symbol
+        const symbolMatch = item.symbol.match(/US(\d+)([MY])/);
+        if (!symbolMatch) {
+            console.warn(`Could not parse symbol: ${item.symbol}. Skipping this item.`);
+            return null; // Or throw an error, depending on desired error handling
+        }
+
+        const value = parseInt(symbolMatch[1]);
+        const unit = symbolMatch[2];
+
+        let months: number;
+        if (unit === 'M') {
+            months = value;
+        } else if (unit === 'Y') {
+            months = value * 12;
+        } else {
+            console.warn(`Unknown unit in symbol: ${item.symbol}. Skipping this item.`);
+            return null;
+        }
+
+        // Clean and convert the yield string to a number
+        const yieldValue = parseFloat(item.yield.replace('%', ''));
+
+        return {
+            time: months,
+            value: yieldValue
+        };
+    }).filter(item => item !== null) as OutputData[]; // Filter out any skipped items
+}
+
 export default function BondView() {
   const [bondData, setBondData] = useState<BondItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,7 +78,8 @@ export default function BondView() {
         setLoading(true);
         const quickData = await fetchQuickBondData();
         setBondData(quickData.data);
-        console.log(quickData);
+        setYieldChartData(convertYieldData(quickData.data));
+        console.log(yieldChartData)
 
         const bondBook = await fetchBondOrderBook();
         setBondOrderBook(bondBook.notes);
