@@ -3,12 +3,12 @@ import { X, TrendingUp, TrendingDown, HandCoins, Target } from 'lucide-react';
 import { addTransaction, updateTransaction, Transaction } from '../utils/db';
 
 interface PortfolioDialogProps {
-  symbol: string;
+  symbol?: string;
   onClose: () => void;
   transaction?: Transaction;
 }
 
-const PortfolioDialog: React.FC<PortfolioDialogProps> = ({ symbol, onClose, transaction }) => {
+const PortfolioDialog: React.FC<PortfolioDialogProps> = ({ symbol = '', onClose, transaction }) => {
   // Get today's date in YYYY-MM-DD format without timezone conversion
   const getTodayDate = () => {
     const today = new Date();
@@ -19,6 +19,7 @@ const PortfolioDialog: React.FC<PortfolioDialogProps> = ({ symbol, onClose, tran
   };
 
   const [formData, setFormData] = useState({
+    symbol: transaction?.symbol || symbol,
     date: transaction?.date || getTodayDate(),
     type: transaction?.type || 'buy',
     shares: transaction?.shares.toString() || '',
@@ -31,11 +32,16 @@ const PortfolioDialog: React.FC<PortfolioDialogProps> = ({ symbol, onClose, tran
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!formData.symbol.trim()) {
+      alert('Please enter a valid ticker symbol');
+      return;
+    }
+    
     try {
       if (transaction) {
         await updateTransaction({
           id: transaction.id,
-          symbol,
+          symbol: formData.symbol.toUpperCase().trim(),
           date: formData.date, // Keep date as-is, no conversion
           type: formData.type as 'buy' | 'sell' | 'dividend' | 'options',
           shares: formData.type === 'options' ? Number(formData.shares) : Math.abs(Number(formData.shares)), // Allow negative for options
@@ -46,7 +52,7 @@ const PortfolioDialog: React.FC<PortfolioDialogProps> = ({ symbol, onClose, tran
         });
       } else {
         await addTransaction({
-          symbol,
+          symbol: formData.symbol.toUpperCase().trim(),
           date: formData.date, // Keep date as-is, no conversion
           type: formData.type as 'buy' | 'sell' | 'dividend' | 'options',
           shares: formData.type === 'options' ? Number(formData.shares) : Math.abs(Number(formData.shares)), // Allow negative for options
@@ -122,7 +128,7 @@ const PortfolioDialog: React.FC<PortfolioDialogProps> = ({ symbol, onClose, tran
         <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             {getTransactionIcon()}
-            {transaction ? 'Edit' : 'Add'} Transaction for {symbol}
+            {transaction ? 'Edit' : 'Add'} Transaction
           </h2>
           <button
             onClick={onClose}
@@ -135,6 +141,18 @@ const PortfolioDialog: React.FC<PortfolioDialogProps> = ({ symbol, onClose, tran
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
+              <label className="block text-sm font-medium mb-1">Ticker Symbol</label>
+              <input
+                type="text"
+                value={formData.symbol}
+                onChange={(e) => setFormData(prev => ({ ...prev, symbol: e.target.value.toUpperCase() }))}
+                className="input w-full"
+                placeholder="AAPL"
+                required
+                disabled={!!transaction} // Disable editing symbol for existing transactions
+              />
+            </div>
+            <div>
               <label className="block text-sm font-medium mb-1">Date</label>
               <input
                 type="date"
@@ -144,20 +162,21 @@ const PortfolioDialog: React.FC<PortfolioDialogProps> = ({ symbol, onClose, tran
                 required
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Type</label>
-              <select
-                value={formData.type}
-                onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
-                className="input w-full"
-                required
-              >
-                <option value="buy">Buy</option>
-                <option value="sell">Sell</option>
-                <option value="dividend">Dividend</option>
-                <option value="options">Options</option>
-              </select>
-            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Type</label>
+            <select
+              value={formData.type}
+              onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
+              className="input w-full"
+              required
+            >
+              <option value="buy">Buy</option>
+              <option value="sell">Sell</option>
+              <option value="dividend">Dividend</option>
+              <option value="options">Options</option>
+            </select>
           </div>
 
           {/* Transaction type description */}

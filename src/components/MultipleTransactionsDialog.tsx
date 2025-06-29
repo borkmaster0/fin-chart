@@ -78,7 +78,7 @@ const MultipleTransactionsDialog: React.FC<MultipleTransactionsDialogProps> = ({
 
   const updateTransaction = (id: string, field: keyof TransactionRow, value: string) => {
     setTransactions(transactions.map(t => 
-      t.id === id ? { ...t, [field]: value } : t
+      t.id === id ? { ...t, [field]: field === 'symbol' ? value.toUpperCase() : value } : t
     ));
     
     // Clear error for this field when user starts typing
@@ -277,7 +277,7 @@ const MultipleTransactionsDialog: React.FC<MultipleTransactionsDialogProps> = ({
                       <input
                         type="text"
                         value={transaction.symbol}
-                        onChange={(e) => updateTransaction(transaction.id, 'symbol', e.target.value.toUpperCase())}
+                        onChange={(e) => updateTransaction(transaction.id, 'symbol', e.target.value)}
                         className={`input w-full text-sm ${
                           getErrorForField(transaction.id, 'symbol') ? 'border-red-500' : ''
                         }`}

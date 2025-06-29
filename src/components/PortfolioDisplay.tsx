@@ -400,7 +400,6 @@ const PortfolioDisplay: React.FC<PortfolioDisplayProps> = ({ onSymbolSelect }) =
         {/* Dialogs */}
         {showAddTransactionDialog && (
           <PortfolioDialog
-            symbol="AAPL"
             onClose={() => {
               setShowAddTransactionDialog(false);
               loadAllTransactions();
@@ -899,7 +898,6 @@ const PortfolioDisplay: React.FC<PortfolioDisplayProps> = ({ onSymbolSelect }) =
       {/* Dialogs */}
       {showAddTransactionDialog && (
         <PortfolioDialog
-          symbol="AAPL"
           onClose={() => {
             setShowAddTransactionDialog(false);
             loadAllTransactions();
