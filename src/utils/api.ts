@@ -41,6 +41,25 @@ export interface EventDetailResponse {
   };
 }
 
+export interface CandlestickPrice {
+  open: number | null;
+  high: number | null;
+  low: number | null;
+  close: number | null;
+  previous: number | null;
+}
+
+export interface Candlestick {
+  end_period_ts: number;
+  price: CandlestickPrice;
+  volume: number;
+  open_interest: number;
+}
+
+export interface CandlestickResponse {
+  candlesticks: Candlestick[];
+}
+
 export async function fetchMostActiveStocks(symbol: string): Promise<StockArray> {
   const url = `https://corsproxy.io/?https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?count=5&formatted=true&scrIds=MOST_ACTIVES&sortField=&sortType=&start=0&useRecordsResponse=false&fields=symbol`;
   try {
@@ -347,5 +366,56 @@ export async function fetchMarketDetails(seriesTicker: string, eventTicker: stri
   } catch (error) {
     console.error('Error fetching market details:', error);
     throw new Error(error instanceof Error ? error.message : 'Failed to fetch market details');
+  }
+}
+
+/**
+ * Fetch candlestick data for prediction markets
+ * @param seriesTicker - The series ticker (e.g., "KXLALEADEROUT")
+ * @param seriesId - The market series ID from fetchMarketDetails
+ * @param startTs - Start timestamp in seconds
+ * @param endTs - End timestamp in seconds
+ * @param periodInterval - Period interval in minutes (e.g., 60 for 1-hour candles)
+ * @returns Promise<CandlestickResponse>
+ */
+export async function fetchCandlestickData(
+  seriesTicker: string,
+  seriesId: string,
+  startTs: number,
+  endTs: number,
+  periodInterval: number = 60
+): Promise<CandlestickResponse> {
+  const url = `https://corsproxy.io/?https://api.elections.kalshi.com/v1/series/${encodeURIComponent(seriesTicker)}/markets/${encodeURIComponent(seriesId)}/candlesticks?start_ts=${startTs}&end_ts=${endTs}&period_interval=${periodInterval}`;
+  
+  try {
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    // Transform the raw API response to extract only the data we need
+    const transformedData: CandlestickResponse = {
+      candlesticks: data.candlesticks.map((candle: any) => ({
+        end_period_ts: candle.end_period_ts,
+        price: {
+          open: candle.price.open,
+          high: candle.price.high,
+          low: candle.price.low,
+          close: candle.price.close,
+          previous: candle.price.previous
+          // Excluding mean and mean_centi as requested
+        },
+        volume: candle.volume,
+        open_interest: candle.open_interest
+      }))
+    };
+    
+    return transformedData;
+  } catch (error) {
+    console.error('Error fetching candlestick data:', error);
+    throw new Error(error instanceof Error ? error.message : 'Failed to fetch candlestick data');
   }
 }
