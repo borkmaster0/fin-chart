@@ -1,54 +1,80 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { TrendingUp, Calendar, Tag, Search, Filter, ExternalLink, Loader2, AlertTriangle, DollarSign, BarChart3, Users, Clock, ArrowLeft, TrendingDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { createChart, ISeriesApi, CandlestickSeries, ColorType, CrosshairMode } from 'lightweight-charts';
-import { TrendingUp, TrendingDown, DollarSign, Users, Activity, BarChart3, Loader2, AlertTriangle, Calendar } from 'lucide-react';
-import { fetchOrderBook, fetchMarketDetails, fetchCandlestickData, OrderBookResponse, CandlestickResponse } from '../utils/api';
+import { fetchOrderBook, OrderBookResponse, fetchMarketDetails, fetchCandlestickData, CandlestickResponse } from '../utils/api';
 
-interface PredictionMarket {
-  id: string;
+interface PredictionEvent {
   event_ticker: string;
   series_ticker: string;
+  sub_title: string;
   title: string;
-  subtitle?: string;
-  close_date: string;
+  collateral_return_type: string;
+  mutually_exclusive: boolean;
+  category: string;
+}
+
+interface Market {
+  ticker: string;
+  event_ticker: string;
+  market_type: string;
+  title: string;
+  subtitle: string;
+  yes_sub_title: string;
+  no_sub_title: string;
+  open_time: string;
+  close_time: string;
+  status: string;
+  yes_bid: number;
+  yes_ask: number;
+  no_bid: number;
+  no_ask: number;
+  last_price: number;
+  previous_price: number;
+  volume: number;
   volume_24h: number;
-  open_interest: number;
   liquidity: number;
-  yes_price: number;
-  no_price: number;
-  yes_bid?: number;
-  yes_ask?: number;
-  no_bid?: number;
-  no_ask?: number;
+  open_interest: number;
+  custom_strike?: {
+    [key: string]: string;
+  };
+  rules_primary: string;
 }
 
+interface EventWithMarkets extends PredictionEvent {
+  markets?: Market[];
+  isLoadingMarkets?: boolean;
+  marketsError?: string;
+}
+
+interface PredictionData {
+  events: PredictionEvent[];
+}
+
+interface EventDetailResponse {
+  event: PredictionEvent;
+  markets: Market[];
+}
+
+interface MarketCandlestickData {
+  marketId: string;
+  marketTitle: string;
+  candlesticks: CandlestickResponse;
+}
+
+// Candlestick Chart Component
 interface CandlestickChartProps {
-  data: Record<string, Array<{
-    time: number;
-    open: number | null;
-    high: number | null;
-    low: number | null;
-    close: number | null;
-  }>>;
-  isLoading: boolean;
-  error: string | null;
+  candlestickData: MarketCandlestickData[];
+  isDarkMode: boolean;
 }
 
-const CandlestickChart: React.FC<CandlestickChartProps> = ({ data, isLoading, error }) => {
+const CandlestickChart: React.FC<CandlestickChartProps> = ({ candlestickData, isDarkMode }) => {
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<ReturnType<typeof createChart> | null>(null);
   const seriesRefs = useRef<Record<string, ISeriesApi<'Candlestick'>>>({});
 
-  // Chart colors for different series
-  const chartColors = [
-    '#2962FF', '#FF6D00', '#D50000', '#00C853', '#AA00FF',
-    '#0091EA', '#C51162', '#FFD600', '#6200EA', '#00BFA5'
-  ];
-
   useEffect(() => {
-    if (!chartRef.current || isLoading || error) return;
+    if (!chartRef.current || candlestickData.length === 0) return;
 
-    const isDarkMode = document.documentElement.classList.contains('dark');
-    
     const chart = createChart(chartRef.current, {
       width: chartRef.current.clientWidth,
       height: 400,
@@ -80,42 +106,53 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data, isLoading, er
 
     chartInstance.current = chart;
 
-    // Add series for each market
-    Object.entries(data).forEach(([marketId, candlesticks], index) => {
-      if (candlesticks.length === 0) return;
+    // Chart colors for different markets
+    const colors = [
+      { upColor: '#10B981', downColor: '#EF4444', borderUpColor: '#10B981', borderDownColor: '#EF4444', wickUpColor: '#10B981', wickDownColor: '#EF4444' },
+      { upColor: '#3B82F6', downColor: '#F97316', borderUpColor: '#3B82F6', borderDownColor: '#F97316', wickUpColor: '#3B82F6', wickDownColor: '#F97316' },
+      { upColor: '#8B5CF6', downColor: '#EC4899', borderUpColor: '#8B5CF6', borderDownColor: '#EC4899', wickUpColor: '#8B5CF6', wickDownColor: '#EC4899' },
+      { upColor: '#06B6D4', downColor: '#F59E0B', borderUpColor: '#06B6D4', borderDownColor: '#F59E0B', wickUpColor: '#06B6D4', wickDownColor: '#F59E0B' },
+      { upColor: '#84CC16', downColor: '#DC2626', borderUpColor: '#84CC16', borderDownColor: '#DC2626', wickUpColor: '#84CC16', wickDownColor: '#DC2626' },
+    ];
 
+    // Add series for each market
+    candlestickData.forEach((marketData, index) => {
+      const colorSet = colors[index % colors.length];
+      
       const series = chart.addSeries(CandlestickSeries, {
-        upColor: chartColors[index % chartColors.length],
-        downColor: chartColors[index % chartColors.length],
-        borderVisible: false,
-        wickUpColor: chartColors[index % chartColors.length],
-        wickDownColor: chartColors[index % chartColors.length],
-        priceFormat: {
+        ...colorSet,
+        borderVisible: true,
+        wickVisible: true,
+        priceLineVisible: false,
+        title: marketData.marketTitle,
+        priceScaleId: 'right',
+        priceFormat: { 
           type: 'price',
-          precision: 2,
-          minMove: 0.01,
-        },
+          precision: 0,
+          minMove: 1
+        }
       });
 
-      // Filter out null values and convert to proper format
-      const validData = candlesticks
+      // Transform candlestick data for the chart
+      const chartData = marketData.candlesticks.candlesticks
         .filter(candle => 
-          candle.open !== null && 
-          candle.high !== null && 
-          candle.low !== null && 
-          candle.close !== null
+          candle.price.open !== null && 
+          candle.price.high !== null && 
+          candle.price.low !== null && 
+          candle.price.close !== null
         )
         .map(candle => ({
-          time: candle.time,
-          open: candle.open!,
-          high: candle.high!,
-          low: candle.low!,
-          close: candle.close!,
-        }));
+          time: candle.end_period_ts,
+          open: candle.price.open!,
+          high: candle.price.high!,
+          low: candle.price.low!,
+          close: candle.price.close!,
+        }))
+        .sort((a, b) => a.time - b.time);
 
-      if (validData.length > 0) {
-        series.setData(validData);
-        seriesRefs.current[marketId] = series;
+      if (chartData.length > 0) {
+        series.setData(chartData);
+        seriesRefs.current[marketData.marketId] = series;
       }
     });
 
@@ -134,406 +171,773 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data, isLoading, er
     return () => {
       resizeObserver.disconnect();
       chart.remove();
+      chartInstance.current = null;
+      seriesRefs.current = {};
     };
-  }, [data, isLoading, error]);
+  }, [candlestickData, isDarkMode]);
 
-  if (isLoading) {
+  if (candlestickData.length === 0) {
     return (
-      <div className="flex items-center justify-center h-[400px] bg-slate-50 dark:bg-slate-800 rounded-lg">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 text-primary mx-auto animate-spin mb-2" />
-          <p className="text-slate-600 dark:text-slate-400">Loading price history...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-[400px] bg-slate-50 dark:bg-slate-800 rounded-lg">
-        <div className="text-center">
-          <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto mb-2" />
-          <p className="text-slate-600 dark:text-slate-400">{error}</p>
-        </div>
-      </div>
-    );
-  }
-
-  const hasData = Object.values(data).some(series => series.length > 0);
-
-  if (!hasData) {
-    return (
-      <div className="flex items-center justify-center h-[400px] bg-slate-50 dark:bg-slate-800 rounded-lg">
-        <div className="text-center">
-          <BarChart3 className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-          <p className="text-slate-600 dark:text-slate-400">No price history available</p>
-        </div>
+      <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-8 text-center">
+        <BarChart3 className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+        <p className="text-slate-600 dark:text-slate-400">
+          No candlestick data available for this event.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      {/* Chart Legend */}
-      <div className="flex flex-wrap gap-4 text-sm">
-        {Object.keys(data).map((marketId, index) => (
-          <div key={marketId} className="flex items-center gap-2">
-            <div 
-              className="w-4 h-4 rounded"
-              style={{ backgroundColor: chartColors[index % chartColors.length] }}
-            ></div>
-            <span className="text-slate-600 dark:text-slate-400">
-              Market {index + 1}
-            </span>
-          </div>
-        ))}
-      </div>
-      
-      {/* Chart */}
-      <div ref={chartRef} className="w-full h-[400px] rounded-lg border border-slate-200 dark:border-slate-700" />
+    <div className="relative w-full h-full">
+      <div ref={chartRef} className="w-full h-full" />
     </div>
   );
 };
 
 const PredictionView: React.FC = () => {
-  const [selectedEvent, setSelectedEvent] = useState<PredictionMarket | null>(null);
-  const [orderBooks, setOrderBooks] = useState<Record<string, OrderBookResponse>>({});
-  const [isLoadingOrderBooks, setIsLoadingOrderBooks] = useState(false);
-  const [candlestickData, setCandlestickData] = useState<Record<string, Array<{
-    time: number;
-    open: number | null;
-    high: number | null;
-    low: number | null;
-    close: number | null;
-  }>>>({});
+  const [predictionData, setPredictionData] = useState<EventWithMarkets[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  
+  // New state for detailed view
+  const [selectedEvent, setSelectedEvent] = useState<EventWithMarkets | null>(null);
+  const [isLoadingEventDetails, setIsLoadingEventDetails] = useState(false);
+  
+  // State for expanded market cards
+  const [expandedMarkets, setExpandedMarkets] = useState<Set<string>>(new Set());
+  
+  // State for order book data
+  const [orderBookData, setOrderBookData] = useState<{ [ticker: string]: OrderBookResponse }>({});
+  const [loadingOrderBooks, setLoadingOrderBooks] = useState<Set<string>>(new Set());
+
+  // State for candlestick data
+  const [candlestickData, setCandlestickData] = useState<MarketCandlestickData[]>([]);
   const [isLoadingCandlesticks, setIsLoadingCandlesticks] = useState(false);
   const [candlestickError, setCandlestickError] = useState<string | null>(null);
 
-  // Mock data for demonstration
-  const mockEvents: PredictionMarket[] = [
-    {
-      id: '1',
-      event_ticker: 'KXLALEADEROUT-35',
-      series_ticker: 'KXLALEADEROUT',
-      title: 'Which of these Latin America leaders will leave office next?',
-      subtitle: 'Before 2035',
-      close_date: '2035-01-01T15:00:00Z',
-      volume_24h: 4700,
-      open_interest: 4500,
-      liquidity: 1200000,
-      yes_price: 0.45,
-      no_price: 0.55,
-      yes_bid: 0.44,
-      yes_ask: 0.46,
-      no_bid: 0.54,
-      no_ask: 0.56,
-    },
-    {
-      id: '2',
-      event_ticker: 'KXWARMING-50',
-      series_ticker: 'KXWARMING',
-      title: 'Will global temperatures rise by 2°C by 2050?',
-      subtitle: 'Climate prediction market',
-      close_date: '2050-12-31T23:59:59Z',
-      volume_24h: 8200,
-      open_interest: 12000,
-      liquidity: 2500000,
-      yes_price: 0.72,
-      no_price: 0.28,
-      yes_bid: 0.71,
-      yes_ask: 0.73,
-      no_bid: 0.27,
-      no_ask: 0.29,
-    },
-  ];
+  // Dark mode detection
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('darkMode') === 'true' || 
+        window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    return false;
+  });
 
-  const handleEventClick = async (event: PredictionMarket) => {
-    setSelectedEvent(event);
-    setIsLoadingOrderBooks(true);
-    setIsLoadingCandlesticks(true);
-    setCandlestickError(null);
+  useEffect(() => {
+    const handleStorageChange = () => {
+      setIsDarkMode(localStorage.getItem('darkMode') === 'true');
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  // Get unique categories from the data
+  const categories = React.useMemo(() => {
+    const uniqueCategories = [...new Set(predictionData.map(event => event.category))];
+    return uniqueCategories.sort();
+  }, [predictionData]);
+
+  // Filter events based on search term and category
+  const filteredEvents = React.useMemo(() => {
+    return predictionData.filter(event => {
+      const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           event.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           event.sub_title.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = selectedCategory === 'all' || event.category === selectedCategory;
+      return matchesSearch && matchesCategory;
+    });
+  }, [predictionData, searchTerm, selectedCategory]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredEvents.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentEvents = filteredEvents.slice(startIndex, endIndex);
+
+  // Toggle market expansion
+  const toggleMarketExpansion = async (marketTicker: string) => {
+    setExpandedMarkets(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(marketTicker)) {
+        newSet.delete(marketTicker);
+      } else {
+        newSet.add(marketTicker);
+        // Load order book data when expanding
+        loadOrderBookData(marketTicker);
+      }
+      return newSet;
+    });
+  };
+
+  // Load order book data for a specific market
+  const loadOrderBookData = async (marketTicker: string) => {
+    if (orderBookData[marketTicker] || loadingOrderBooks.has(marketTicker)) {
+      return; // Already loaded or loading
+    }
+
+    setLoadingOrderBooks(prev => new Set(prev).add(marketTicker));
 
     try {
-      // Step 1: Fetch market details to get series IDs
-      console.log('Fetching market details for:', event.series_ticker, event.event_ticker);
-      const { marketDetails } = await fetchMarketDetails(event.series_ticker, event.event_ticker);
-      console.log('Market details received:', marketDetails);
-
-      // Step 2: Calculate timestamps for candlestick data
-      const endTs = Math.floor(Date.now() / 1000); // Current time in seconds
-      const periodInterval = 60; // 60 minutes
-      const maxPeriods = 5000; // API limit
-      
-      // Calculate start_ts: go back 5000 periods (60 minutes each) from end_ts
-      const startTs = endTs - (maxPeriods * periodInterval * 60); // Convert minutes to seconds
-      
-      console.log('Timestamp range:', {
-        startTs,
-        endTs,
-        periodInterval,
-        maxPeriods,
-        startDate: new Date(startTs * 1000).toISOString(),
-        endDate: new Date(endTs * 1000).toISOString(),
-        totalHours: maxPeriods,
-        totalDays: Math.round(maxPeriods / 24)
+      const orderBook = await fetchOrderBook(marketTicker);
+      setOrderBookData(prev => ({
+        ...prev,
+        [marketTicker]: orderBook
+      }));
+    } catch (error) {
+      console.error(`Failed to load order book for ${marketTicker}:`, error);
+    } finally {
+      setLoadingOrderBooks(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(marketTicker);
+        return newSet;
       });
+    }
+  };
 
-      // Step 3: Fetch candlestick data for each market with delay
-      const candlestickResults: Record<string, Array<{
-        time: number;
-        open: number | null;
-        high: number | null;
-        low: number | null;
-        close: number | null;
-      }>> = {};
+  // Fetch market details for a specific event
+  const fetchEventMarkets = async (eventTicker: string) => {
+    try {
+      const response = await fetch(`https://corsproxy.io/?https://api.elections.kalshi.com/trade-api/v2/events/${eventTicker}`);
+      console.log(response)
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      
+      const data: EventDetailResponse = await response.json();
+      return data.markets || [];
+    } catch (err) {
+      console.error(`Error fetching markets for ${eventTicker}:`, err);
+      throw err;
+    }
+  };
+
+  // Load candlestick data for all markets in an event
+  const loadCandlestickData = async (event: EventWithMarkets) => {
+    if (!event.markets || event.markets.length === 0) return;
+
+    setIsLoadingCandlesticks(true);
+    setCandlestickError(null);
+    setCandlestickData([]);
+
+    try {
+      // Step 1: Get market details to obtain market IDs
+      const { marketDetails } = await fetchMarketDetails(event.series_ticker, event.event_ticker);
+      console.log(marketDetails);
+      if (marketDetails.length === 0) {
+        throw new Error('No market details found');
+      }
+
+      // Step 2: Fetch candlestick data for each market ID with 10ms delay between calls
+      const candlestickResults: MarketCandlestickData[] = [];
+      const endTs = Math.floor(Date.now() / 1000);
+      const startTs = endTs - (30 * 24 * 60 * 60); // 30 days ago
 
       for (let i = 0; i < marketDetails.length; i++) {
-        const market = marketDetails[i];
+        const marketDetail = marketDetails[i];
+        
         try {
-          console.log(`Fetching candlesticks for market ${i + 1}/${marketDetails.length}:`, market.id);
-          
+          // Find corresponding market info for title
+          const marketInfo = event.markets.find(m => m.ticker.includes(event.series_ticker));
+          const marketTitle = marketInfo?.yes_sub_title || marketInfo?.title || `Market ${i + 1}`;
+
           const candlestickResponse = await fetchCandlestickData(
             event.series_ticker,
-            market.id,
+            marketDetail.id,
             startTs,
             endTs,
-            periodInterval
+            60 // 1-hour intervals
           );
+          console.log(candlestickResponse);
 
-          // Transform the data
-          const transformedData = candlestickResponse.candlesticks.map(candle => ({
-            time: candle.end_period_ts,
-            open: candle.price.open,
-            high: candle.price.high,
-            low: candle.price.low,
-            close: candle.price.close,
-          }));
+          if (candlestickResponse.candlesticks.length > 0) {
+            candlestickResults.push({
+              marketId: marketDetail.id,
+              marketTitle,
+              candlesticks: candlestickResponse
+            });
+          }
 
-          candlestickResults[market.id] = transformedData;
-          console.log(`Candlestick data for ${market.id}:`, transformedData.length, 'candles');
-
-          // 10ms delay between calls as requested
+          // Wait 10ms between API calls as requested
           if (i < marketDetails.length - 1) {
             await new Promise(resolve => setTimeout(resolve, 10));
           }
         } catch (error) {
-          console.error(`Failed to fetch candlesticks for market ${market.id}:`, error);
-          candlestickResults[market.id] = [];
+          console.error(`Failed to fetch candlestick data for market ${marketDetail.id}:`, error);
+          // Continue with other markets even if one fails
         }
       }
 
       setCandlestickData(candlestickResults);
-
-      // Step 4: Fetch order books for the markets
-      const marketTickers = marketDetails.map(market => market.id).join(',');
-      console.log('Fetching order books for tickers:', marketTickers);
-      
-      const orderBookData = await fetchOrderBook(marketTickers);
-      setOrderBooks({ [event.id]: orderBookData });
-
     } catch (error) {
-      console.error('Error fetching event data:', error);
-      setCandlestickError(error instanceof Error ? error.message : 'Failed to load price data');
+      console.error('Failed to load candlestick data:', error);
+      setCandlestickError('Failed to load chart data. Please try again.');
     } finally {
-      setIsLoadingOrderBooks(false);
       setIsLoadingCandlesticks(false);
     }
   };
 
-  const formatPrice = (price: number) => `${(price * 100).toFixed(0)}¢`;
-  const formatVolume = (volume: number) => {
-    if (volume >= 1000000) return `${(volume / 1000000).toFixed(1)}M`;
-    if (volume >= 1000) return `${(volume / 1000).toFixed(1)}K`;
+  // Show detailed event view
+  const showEventDetails = async (event: EventWithMarkets) => {
+    setIsLoadingEventDetails(true);
+    setSelectedEvent(event);
+    setExpandedMarkets(new Set()); // Reset expanded markets when viewing new event
+    setCandlestickData([]); // Reset candlestick data
+    
+    try {
+      let markets = event.markets;
+      if (!markets) {
+        markets = await fetchEventMarkets(event.event_ticker);
+        console.log(markets);
+        setSelectedEvent(prev => prev ? { ...prev, markets } : null);
+      }
+
+      // Load candlestick data after markets are loaded
+      const eventWithMarkets = { ...event, markets };
+      await loadCandlestickData(eventWithMarkets);
+    } catch (err) {
+      setSelectedEvent(prev => prev ? { ...prev, marketsError: 'Failed to load market data' } : null);
+    } finally {
+      setIsLoadingEventDetails(false);
+    }
+  };
+
+  // Go back to list view
+  const goBackToList = () => {
+    setSelectedEvent(null);
+    setIsLoadingEventDetails(false);
+    setExpandedMarkets(new Set());
+    setOrderBookData({}); // Clear order book data when going back
+    setCandlestickData([]); // Clear candlestick data when going back
+    setCandlestickError(null);
+  };
+
+  useEffect(() => {
+    const fetchPredictionData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const response = await fetch('https://corsproxy.io/?https://api.elections.kalshi.com/trade-api/v2/events?limit=200');
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        
+        const data: PredictionData = await response.json();
+        console.log(data);
+        setPredictionData(data.events || []);
+      } catch (err) {
+        console.error('Error fetching prediction data:', err);
+        setError('Failed to fetch prediction market data. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPredictionData();
+  }, []);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedCategory]);
+
+  const getCategoryColor = (category: string): string => {
+    const colors = {
+      'Climate and Weather': 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',
+      'Politics': 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
+      'Economics': 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300',
+      'Technology': 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300',
+      'Sports': 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300',
+      'Entertainment': 'bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300',
+      'Science': 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300',
+    };
+    return colors[category as keyof typeof colors] || 'bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300';
+  };
+
+  const formatPrice = (price: number): string => {
+    return `${price}¢`;
+  };
+
+  const formatVolume = (volume: number): string => {
+    if (volume >= 1000000) {
+      return `${(volume / 1000000).toFixed(1)}M`;
+    } else if (volume >= 1000) {
+      return `${(volume / 1000).toFixed(1)}K`;
+    }
     return volume.toString();
   };
 
+  const getPriceChangeColor = (current: number, previous: number): string => {
+    if (current > previous) return 'text-green-600 dark:text-green-400';
+    if (current < previous) return 'text-red-600 dark:text-red-400';
+    return 'text-slate-600 dark:text-slate-400';
+  };
+
+  // If an event is selected, show the detailed view
   if (selectedEvent) {
-    const orderBook = orderBooks[selectedEvent.id];
-    const totalVolume = mockEvents.reduce((sum, event) => sum + event.volume_24h, 0);
-    const totalOpenInterest = mockEvents.reduce((sum, event) => sum + event.open_interest, 0);
-    const totalLiquidity = mockEvents.reduce((sum, event) => sum + event.liquidity, 0);
-    const activeMarkets = mockEvents.length;
-
     return (
-      <div className="max-w-6xl mx-auto space-y-8">
-        {/* Back Button */}
-        <button
-          onClick={() => setSelectedEvent(null)}
-          className="flex items-center gap-2 text-primary hover:text-primary-dark transition-colors"
-        >
-          ← Back to Markets
-        </button>
-
-        {/* Event Header */}
-        <div className="space-y-4">
+      <div className="max-w-7xl mx-auto p-6">
+        {/* Header with back button */}
+        <div className="mb-8">
+          <button
+            onClick={goBackToList}
+            className="flex items-center gap-2 text-primary hover:text-primary-dark font-medium mb-4 transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Prediction Markets
+          </button>
+          
           <div className="flex items-start justify-between">
-            <div className="space-y-2">
-              <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-3">
+                <span className={`px-3 py-1 rounded-md text-sm font-medium ${getCategoryColor(selectedEvent.category)}`}>
+                  {selectedEvent.category}
+                </span>
+                {selectedEvent.mutually_exclusive && (
+                  <span className="px-3 py-1 rounded-md text-sm font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
+                    Mutually Exclusive
+                  </span>
+                )}
+                <span className="px-3 py-1 rounded-md text-sm font-medium bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-mono">
+                  {selectedEvent.event_ticker}
+                </span>
+              </div>
+              
+              <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-3 leading-tight">
                 {selectedEvent.title}
               </h1>
-              {selectedEvent.subtitle && (
-                <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
-                  <Calendar size={16} />
-                  <span>{selectedEvent.subtitle}</span>
+              
+              {selectedEvent.sub_title && (
+                <div className="flex items-center gap-2 text-lg text-slate-600 dark:text-slate-400 mb-4">
+                  <Calendar className="h-5 w-5" />
+                  <span>{selectedEvent.sub_title}</span>
                 </div>
               )}
             </div>
-            <div className="text-right">
-              <div className="text-sm text-slate-600 dark:text-slate-400">Closes</div>
-              <div className="font-medium">
-                {new Date(selectedEvent.close_date).toLocaleDateString()}
-              </div>
-            </div>
+            
+            <a
+              href={`https://kalshi.com/events/${selectedEvent.event_ticker}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark font-medium transition-colors"
+            >
+              <span>Trade on Kalshi</span>
+              <ExternalLink className="h-4 w-4" />
+            </a>
           </div>
         </div>
 
-        {/* Candlestick Chart */}
-        <div className="card">
-          <div className="mb-6">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
-              Price History
-            </h2>
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              Historical price movements for all markets in this event (last {Math.round(5000 / 24)} days)
-            </p>
+        {/* Candlestick Chart Section */}
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Price History</h2>
+            {candlestickData.length > 0 && (
+              <div className="text-sm text-slate-600 dark:text-slate-400">
+                {candlestickData.length} market{candlestickData.length !== 1 ? 's' : ''} • Last 30 days
+              </div>
+            )}
           </div>
           
-          <CandlestickChart 
-            data={candlestickData}
-            isLoading={isLoadingCandlesticks}
-            error={candlestickError}
-          />
-        </div>
-
-        {/* Market Overview */}
-        <div className="card">
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-6">
-            Market Overview ({activeMarkets} active markets)
-          </h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-6 text-center">
-              <div className="text-2xl font-bold text-slate-900 dark:text-white">
-                {formatVolume(totalVolume)}
-              </div>
-              <div className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                Total Volume
-              </div>
+          {isLoadingCandlesticks ? (
+            <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-8 text-center">
+              <Loader2 className="w-8 h-8 text-primary mx-auto animate-spin mb-4" />
+              <p className="text-slate-600 dark:text-slate-400">Loading price history...</p>
             </div>
-            
-            <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-6 text-center">
-              <div className="text-2xl font-bold text-slate-900 dark:text-white">
-                {formatVolume(totalOpenInterest)}
-              </div>
-              <div className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                Open Interest
-              </div>
-            </div>
-            
-            <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-6 text-center">
-              <div className="text-2xl font-bold text-slate-900 dark:text-white">
-                {formatVolume(totalLiquidity)}
-              </div>
-              <div className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                Total Liquidity
-              </div>
-            </div>
-            
-            <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-6 text-center">
-              <div className="text-2xl font-bold text-slate-900 dark:text-white">
-                {activeMarkets}
-              </div>
-              <div className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                Active Markets
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Individual Markets */}
-        <div className="space-y-6">
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-            Individual Markets
-          </h2>
-          
-          {isLoadingOrderBooks ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-center">
-                <Loader2 className="w-8 h-8 text-primary mx-auto animate-spin mb-2" />
-                <p className="text-slate-600 dark:text-slate-400">Loading market data...</p>
-              </div>
+          ) : candlestickError ? (
+            <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-8 text-center">
+              <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto mb-4" />
+              <p className="text-slate-600 dark:text-slate-400">{candlestickError}</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Mock individual markets for the selected event */}
-              {Array.from({ length: 3 }, (_, i) => (
-                <div key={i} className="card">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-slate-900 dark:text-white">
-                      Option {String.fromCharCode(65 + i)}
-                    </h3>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-slate-600 dark:text-slate-400">
-                        {formatPrice(0.45 + i * 0.1)}
+            <div className="w-full h-[400px]">
+              <CandlestickChart 
+                candlestickData={candlestickData} 
+                isDarkMode={isDarkMode}
+              />
+            </div>
+          )}
+
+          {/* Chart Legend */}
+          {candlestickData.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-600">
+              <div className="flex flex-wrap gap-4">
+                {candlestickData.map((data, index) => {
+                  const colors = [
+                    { up: '#10B981', down: '#EF4444' },
+                    { up: '#3B82F6', down: '#F97316' },
+                    { up: '#8B5CF6', down: '#EC4899' },
+                    { up: '#06B6D4', down: '#F59E0B' },
+                    { up: '#84CC16', down: '#DC2626' },
+                  ];
+                  const colorSet = colors[index % colors.length];
+                  
+                  return (
+                    <div key={data.marketId} className="flex items-center gap-2">
+                      <div className="flex gap-1">
+                        <div 
+                          className="w-3 h-3 rounded-sm"
+                          style={{ backgroundColor: colorSet.up }}
+                        ></div>
+                        <div 
+                          className="w-3 h-3 rounded-sm"
+                          style={{ backgroundColor: colorSet.down }}
+                        ></div>
+                      </div>
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                        {data.marketTitle}
                       </span>
-                      <div className={`flex items-center gap-1 ${
-                        i % 2 === 0 ? 'text-positive' : 'text-negative'
-                      }`}>
-                        {i % 2 === 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-                        <span className="text-sm font-medium">
-                          {i % 2 === 0 ? '+' : '-'}{(Math.random() * 5).toFixed(1)}%
-                        </span>
-                      </div>
                     </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Markets Section */}
+        <div className="space-y-6">
+          {isLoadingEventDetails ? (
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-12 text-center">
+              <Loader2 className="w-8 h-8 text-primary mx-auto animate-spin mb-4" />
+              <p className="text-slate-600 dark:text-slate-400">Loading market data...</p>
+            </div>
+          ) : selectedEvent.marketsError ? (
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-12 text-center">
+              <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Failed to Load Market Data</h3>
+              <p className="text-slate-600 dark:text-slate-400">{selectedEvent.marketsError}</p>
+            </div>
+          ) : selectedEvent.markets && selectedEvent.markets.length > 0 ? (
+            <>
+              {/* Market Overview */}
+              <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+                <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">
+                  Market Overview ({selectedEvent.markets.length} active markets)
+                </h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                  {/* Total Volume */}
+                  <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-slate-900 dark:text-white">
+                      {formatVolume(selectedEvent.markets.reduce((sum, market) => sum + market.volume, 0))}
+                    </div>
+                    <div className="text-sm text-slate-600 dark:text-slate-400">Total Volume</div>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div className="text-center">
-                      <div className="text-sm text-slate-600 dark:text-slate-400">Volume</div>
-                      <div className="font-medium">{formatVolume(1500 + i * 500)}</div>
+                  {/* Total Open Interest */}
+                  <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-slate-900 dark:text-white">
+                      {formatVolume(selectedEvent.markets.reduce((sum, market) => sum + market.open_interest, 0))}
                     </div>
-                    <div className="text-center">
-                      <div className="text-sm text-slate-600 dark:text-slate-400">Open Interest</div>
-                      <div className="font-medium">{formatVolume(2000 + i * 300)}</div>
-                    </div>
+                    <div className="text-sm text-slate-600 dark:text-slate-400">Open Interest</div>
                   </div>
                   
-                  {/* Order Book Preview */}
-                  <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
-                    <div className="text-sm font-medium text-slate-900 dark:text-white mb-2">
-                      Order Book
+                  {/* Total Liquidity */}
+                  <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-slate-900 dark:text-white">
+                      {formatVolume(selectedEvent.markets.reduce((sum, market) => sum + market.liquidity, 0))}
                     </div>
-                    <div className="grid grid-cols-2 gap-4 text-xs">
-                      <div>
-                        <div className="text-positive font-medium mb-1">YES Bids</div>
-                        <div className="space-y-1">
-                          <div className="flex justify-between">
-                            <span>44¢</span>
-                            <span>500</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>43¢</span>
-                            <span>250</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-negative font-medium mb-1">YES Asks</div>
-                        <div className="space-y-1">
-                          <div className="flex justify-between">
-                            <span>46¢</span>
-                            <span>300</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>47¢</span>
-                            <span>150</span>
-                          </div>
-                        </div>
-                      </div>
+                    <div className="text-sm text-slate-600 dark:text-slate-400">Total Liquidity</div>
+                  </div>
+                  
+                  {/* Active Markets */}
+                  <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-slate-900 dark:text-white">
+                      {selectedEvent.markets.filter(m => m.status === 'active').length}
                     </div>
+                    <div className="text-sm text-slate-600 dark:text-slate-400">Active Markets</div>
                   </div>
                 </div>
-              ))}
+              </div>
+
+              {/* Individual Markets */}
+              <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+                <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-6">Individual Markets</h2>
+                
+                <div className="space-y-4">
+                  {selectedEvent.markets.map((market) => {
+                    const isExpanded = expandedMarkets.has(market.ticker);
+                    const orderBook = orderBookData[market.ticker];
+                    const isLoadingOrderBook = loadingOrderBooks.has(market.ticker);
+                    
+                    return (
+                      <div
+                        key={market.ticker}
+                        className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden hover:shadow-md transition-shadow"
+                      >
+                        {/* Collapsed Market Card */}
+                        <div className="p-4">
+                          <div className="flex items-center justify-between">
+                            {/* Left side - Market info */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-3 mb-2">
+                                <h3 className="text-lg font-semibold text-slate-900 dark:text-white truncate">
+                                  {market.yes_sub_title || market.title || 'Market'}
+                                </h3>
+                                {market.custom_strike && (
+                                  <div className="flex flex-wrap gap-1">
+                                    {Object.entries(market.custom_strike).map(([key, value]) => (
+                                      <span key={key} className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded text-xs">
+                                        {value}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="text-sm text-slate-600 dark:text-slate-400 font-mono">
+                                {market.ticker}
+                              </div>
+                            </div>
+
+                            {/* Center - Last Price */}
+                            <div className="text-center mx-6">
+                              <div className="text-3xl font-bold text-slate-900 dark:text-white mb-1">
+                                {market.last_price}%
+                              </div>
+                              {market.previous_price > 0 && (
+                                <div className="flex items-center justify-center gap-1">
+                                  {market.last_price > market.previous_price ? (
+                                    <TrendingUp className="h-3 w-3 text-green-500" />
+                                  ) : market.last_price < market.previous_price ? (
+                                    <TrendingDown className="h-3 w-3 text-red-500" />
+                                  ) : null}
+                                  <span className={`text-sm font-medium ${getPriceChangeColor(market.last_price, market.previous_price)}`}>
+                                    {Math.abs(market.last_price - market.previous_price).toFixed(0)}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Right side - YES/NO prices */}
+                            <div className="flex items-center gap-4">
+                              {/* YES */}
+                              <div className="text-center">
+                                <div className="text-sm text-slate-600 dark:text-slate-400 mb-1">Yes</div>
+                                <div className="px-3 py-2 bg-blue-500 text-white rounded-lg font-bold">
+                                  {formatPrice(market.yes_ask)}
+                                </div>
+                              </div>
+
+                              {/* NO */}
+                              <div className="text-center">
+                                <div className="text-sm text-slate-600 dark:text-slate-400 mb-1">No</div>
+                                <div className="px-3 py-2 bg-purple-500 text-white rounded-lg font-bold">
+                                  {formatPrice(market.no_ask)}
+                                </div>
+                              </div>
+
+                              {/* Expand/Collapse button */}
+                              <button
+                                onClick={() => toggleMarketExpansion(market.ticker)}
+                                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors"
+                              >
+                                {isExpanded ? (
+                                  <ChevronUp className="h-5 w-5 text-slate-600 dark:text-slate-400" />
+                                ) : (
+                                  <ChevronDown className="h-5 w-5 text-slate-600 dark:text-slate-400" />
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Expanded Market Details */}
+                        {isExpanded && (
+                          <div className="border-t border-slate-200 dark:border-slate-700 p-6 bg-slate-50 dark:bg-slate-700/20">
+                            {/* Detailed Price Display */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                              {/* YES Side */}
+                              <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+                                <div className="text-center">
+                                  <div className="flex items-center justify-center gap-2 mb-2">
+                                    <TrendingUp className="h-5 w-5 text-green-600" />
+                                    <span className="text-lg font-semibold text-green-700 dark:text-green-300">YES</span>
+                                  </div>
+                                  <div className="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">
+                                    {formatPrice(market.last_price)}
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-2 text-sm">
+                                    <div>
+                                      <div className="text-green-700 dark:text-green-300 font-medium">Bid</div>
+                                      <div className="text-green-600 dark:text-green-400">{formatPrice(market.yes_bid)}</div>
+                                    </div>
+                                    <div>
+                                      <div className="text-green-700 dark:text-green-300 font-medium">Ask</div>
+                                      <div className="text-green-600 dark:text-green-400">{formatPrice(market.yes_ask)}</div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* NO Side */}
+                              <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
+                                <div className="text-center">
+                                  <div className="flex items-center justify-center gap-2 mb-2">
+                                    <TrendingDown className="h-5 w-5 text-red-600" />
+                                    <span className="text-lg font-semibold text-red-700 dark:text-red-300">NO</span>
+                                  </div>
+                                  <div className="text-3xl font-bold text-red-600 dark:text-red-400 mb-2">
+                                    {formatPrice(100 - market.last_price)}
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-2 text-sm">
+                                    <div>
+                                      <div className="text-red-700 dark:text-red-300 font-medium">Bid</div>
+                                      <div className="text-red-600 dark:text-red-400">{formatPrice(market.no_bid)}</div>
+                                    </div>
+                                    <div>
+                                      <div className="text-red-700 dark:text-red-300 font-medium">Ask</div>
+                                      <div className="text-red-600 dark:text-red-400">{formatPrice(market.no_ask)}</div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Order Book Section */}
+                            <div className="mb-6">
+                              <h4 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Order Book</h4>
+                              
+                              {isLoadingOrderBook ? (
+                                <div className="bg-white dark:bg-slate-800 rounded-lg p-8 text-center">
+                                  <Loader2 className="w-6 h-6 text-primary mx-auto animate-spin mb-2" />
+                                  <p className="text-sm text-slate-600 dark:text-slate-400">Loading order book...</p>
+                                </div>
+                              ) : orderBook && orderBook.order_books.length > 0 ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  {/* YES Order Book */}
+                                  <div className="bg-white dark:bg-slate-800 rounded-lg p-4">
+                                    <h5 className="text-sm font-semibold text-green-700 dark:text-green-300 mb-3 text-center">
+                                      YES Orders
+                                    </h5>
+                                    <div className="space-y-1">
+                                      <div className="grid grid-cols-2 gap-2 text-xs font-medium text-slate-600 dark:text-slate-400 pb-2 border-b border-slate-200 dark:border-slate-600">
+                                        <div>Price</div>
+                                        <div className="text-right">Quantity</div>
+                                      </div>
+                                      {orderBook.order_books[0].yes ? (
+                                        orderBook.order_books[0].yes.slice(0, 10).reverse().map((order, idx) => (
+                                          <div key={idx} className="grid grid-cols-2 gap-2 text-sm">
+                                            <div className="text-green-600 dark:text-green-400 font-medium">
+                                              {formatPrice(order.price)}
+                                            </div>
+                                            <div className="text-right text-slate-900 dark:text-white">
+                                              {order.quantity.toLocaleString()}
+                                            </div>
+                                          </div>
+                                        ))
+                                      ) : (
+                                        <div className="text-center text-slate-500 dark:text-slate-400 py-4">
+                                          No YES orders available
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* NO Order Book (converted to YES sell orders) */}
+                                  <div className="bg-white dark:bg-slate-800 rounded-lg p-4">
+                                    <h5 className="text-sm font-semibold text-red-700 dark:text-red-300 mb-3 text-center">
+                                      NO Orders
+                                    </h5>
+                                    <div className="space-y-1">
+                                      <div className="grid grid-cols-2 gap-2 text-xs font-medium text-slate-600 dark:text-slate-400 pb-2 border-b border-slate-200 dark:border-slate-600">
+                                        <div>Price</div>
+                                        <div className="text-right">Quantity</div>
+                                      </div>
+                                      {orderBook.order_books[0].no ? (
+                                        orderBook.order_books[0].no.slice(0, 10).map((order, idx) => (
+                                          <div key={idx} className="grid grid-cols-2 gap-2 text-sm">
+                                            <div className="text-red-600 dark:text-red-400 font-medium">
+                                              {formatPrice(100 - order.price)} {/* Convert NO price to YES sell price */}
+                                            </div>
+                                            <div className="text-right text-slate-900 dark:text-white">
+                                              {order.quantity.toLocaleString()}
+                                            </div>
+                                          </div>
+                                        ))
+                                      ) : (
+                                        <div className="text-center text-slate-500 dark:text-slate-400 py-4">
+                                          No NO orders available
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="bg-white dark:bg-slate-800 rounded-lg p-8 text-center">
+                                  <AlertTriangle className="w-6 h-6 text-amber-500 mx-auto mb-2" />
+                                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                                    Order book data not available
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Market Statistics */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                              <div className="text-center">
+                                <div className="text-sm text-slate-600 dark:text-slate-400 mb-1">Volume</div>
+                                <div className="font-semibold text-slate-900 dark:text-white">{formatVolume(market.volume)}</div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-sm text-slate-600 dark:text-slate-400 mb-1">24h Volume</div>
+                                <div className="font-semibold text-slate-900 dark:text-white">{formatVolume(market.volume_24h)}</div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-sm text-slate-600 dark:text-slate-400 mb-1">Open Interest</div>
+                                <div className="font-semibold text-slate-900 dark:text-white">{formatVolume(market.open_interest)}</div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-sm text-slate-600 dark:text-slate-400 mb-1">Liquidity</div>
+                                <div className="font-semibold text-slate-900 dark:text-white">{formatVolume(market.liquidity)}</div>
+                              </div>
+                            </div>
+
+                            {/* Market Timing */}
+                            <div className="border-t border-slate-200 dark:border-slate-600 pt-4 mb-4">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                <div>
+                                  <div className="text-slate-600 dark:text-slate-400 mb-1">Market Opens</div>
+                                  <div className="font-medium text-slate-900 dark:text-white">
+                                    {new Date(market.open_time).toLocaleString()}
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="text-slate-600 dark:text-slate-400 mb-1">Market Closes</div>
+                                  <div className="font-medium text-slate-900 dark:text-white">
+                                    {new Date(market.close_time).toLocaleString()}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Market Rules */}
+                            {market.rules_primary && (
+                              <div className="border-t border-slate-200 dark:border-slate-600 pt-4">
+                                <div className="text-sm text-slate-600 dark:text-slate-400 mb-1">Resolution Rules</div>
+                                <div className="text-sm text-slate-900 dark:text-white bg-white dark:bg-slate-800 rounded p-3 border border-slate-200 dark:border-slate-600">
+                                  {market.rules_primary}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-12 text-center">
+              <AlertTriangle className="w-8 h-8 text-slate-400 mx-auto mb-4" />
+              <p className="text-slate-600 dark:text-slate-400">No active markets found for this event.</p>
             </div>
           )}
         </div>
@@ -541,96 +945,237 @@ const PredictionView: React.FC = () => {
     );
   }
 
+  // Main list view
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <Loader2 className="w-10 h-10 text-primary mx-auto animate-spin mb-4" />
+            <p className="text-slate-600 dark:text-slate-400">Loading prediction markets...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-7xl mx-auto p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <AlertTriangle className="w-10 h-10 text-amber-500 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Failed to Load Data</h3>
+            <p className="text-slate-600 dark:text-slate-400">{error}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
+    <div className="max-w-7xl mx-auto p-6">
       {/* Header */}
-      <div className="text-center space-y-4">
-        <h1 className="text-4xl font-bold text-slate-900 dark:text-white">
-          Prediction Markets
-        </h1>
-        <p className="text-xl text-slate-600 dark:text-slate-400">
-          Trade on the outcome of future events
+      <div className="mb-8">
+        <div className="flex items-center gap-3 mb-4">
+          <TrendingUp className="h-8 w-8 text-primary" />
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Prediction Markets</h1>
+        </div>
+        <p className="text-slate-600 dark:text-slate-400">
+          Real-time prediction market data from Kalshi showing what people are betting on future events.
         </p>
       </div>
 
-      {/* Market List */}
-      <div className="space-y-6">
-        {mockEvents.map((event) => (
-          <div 
-            key={event.id}
-            className="card hover:shadow-lg transition-all duration-200 cursor-pointer"
-            onClick={() => handleEventClick(event)}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex-1">
-                <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">
-                  {event.title}
-                </h3>
-                {event.subtitle && (
-                  <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400 mb-3">
-                    <Calendar size={16} />
-                    <span>{event.subtitle}</span>
-                  </div>
-                )}
-              </div>
-              <div className="text-right">
-                <div className="text-sm text-slate-600 dark:text-slate-400">Closes</div>
-                <div className="font-medium">
-                  {new Date(event.close_date).toLocaleDateString()}
-                </div>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-              <div className="text-center">
-                <div className="flex items-center justify-center gap-1 text-slate-600 dark:text-slate-400 mb-1">
-                  <Activity size={16} />
-                  <span className="text-sm">Volume 24h</span>
-                </div>
-                <div className="font-bold text-lg">{formatVolume(event.volume_24h)}</div>
-              </div>
-              
-              <div className="text-center">
-                <div className="flex items-center justify-center gap-1 text-slate-600 dark:text-slate-400 mb-1">
-                  <Users size={16} />
-                  <span className="text-sm">Open Interest</span>
-                </div>
-                <div className="font-bold text-lg">{formatVolume(event.open_interest)}</div>
-              </div>
-              
-              <div className="text-center">
-                <div className="flex items-center justify-center gap-1 text-slate-600 dark:text-slate-400 mb-1">
-                  <DollarSign size={16} />
-                  <span className="text-sm">Liquidity</span>
-                </div>
-                <div className="font-bold text-lg">{formatVolume(event.liquidity)}</div>
-              </div>
-              
-              <div className="text-center">
-                <div className="text-sm text-slate-600 dark:text-slate-400 mb-1">YES Price</div>
-                <div className="font-bold text-lg text-positive">
-                  {formatPrice(event.yes_price)}
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-700">
-              <div className="flex items-center gap-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-positive rounded-full"></div>
-                  <span>YES {formatPrice(event.yes_bid || event.yes_price)}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-negative rounded-full"></div>
-                  <span>NO {formatPrice(event.no_bid || event.no_price)}</span>
-                </div>
-              </div>
-              <button className="text-primary hover:text-primary-dark font-medium">
-                View Details →
-              </button>
+      {/* Filters */}
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-6 mb-6">
+        <div className="flex flex-col lg:flex-row gap-4">
+          {/* Search */}
+          <div className="flex-1">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search prediction markets..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-slate-700 dark:text-white"
+              />
             </div>
           </div>
-        ))}
+
+          {/* Category Filter */}
+          <div className="lg:w-64">
+            <div className="relative">
+              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-slate-700 dark:text-white appearance-none"
+              >
+                <option value="all">All Categories</option>
+                {categories.map(category => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Results Summary */}
+        <div className="mt-4 flex items-center justify-between text-sm text-slate-600 dark:text-slate-400">
+          <span>
+            Showing {currentEvents.length} of {filteredEvents.length} prediction markets
+            {selectedCategory !== 'all' && ` in ${selectedCategory}`}
+          </span>
+          <span>
+            Total: {predictionData.length} markets available
+          </span>
+        </div>
+      </div>
+
+      {/* Prediction Markets List */}
+      {currentEvents.length > 0 ? (
+        <div className="space-y-6 mb-8">
+          {currentEvents.map((event) => (
+            <div
+              key={event.event_ticker}
+              className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden"
+            >
+              {/* Event Header */}
+              <div className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className={`px-2 py-1 rounded-md text-xs font-medium ${getCategoryColor(event.category)}`}>
+                        {event.category}
+                      </span>
+                      {event.mutually_exclusive && (
+                        <span className="px-2 py-1 rounded-md text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
+                          Exclusive
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2 leading-tight">
+                      {event.title}
+                    </h3>
+                    {event.sub_title && (
+                      <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                        <Calendar className="h-4 w-4" />
+                        <span>{event.sub_title}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Metadata */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4 text-sm">
+                    <div className="flex items-center gap-2">
+                      <Tag className="h-4 w-4 text-slate-400" />
+                      <span className="font-mono text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded">
+                        {event.event_ticker}
+                      </span>
+                    </div>
+                    
+                    <a
+                      href={`https://kalshi.com/events/${event.event_ticker}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-primary hover:text-primary-dark font-medium transition-colors"
+                    >
+                      <span>View on Kalshi</span>
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
+
+                  <button
+                    onClick={() => showEventDetails(event)}
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary-dark rounded-md transition-colors"
+                  >
+                    <BarChart3 className="h-4 w-4" />
+                    View Details
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-12">
+          <Search className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
+            No prediction markets found
+          </h3>
+          <p className="text-slate-600 dark:text-slate-400">
+            Try adjusting your search terms or category filter.
+          </p>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2">
+          <button
+            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+            disabled={currentPage === 1}
+            className="px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Previous
+          </button>
+          
+          <div className="flex items-center gap-1">
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              let pageNum;
+              if (totalPages <= 5) {
+                pageNum = i + 1;
+              } else if (currentPage <= 3) {
+                pageNum = i + 1;
+              } else if (currentPage >= totalPages - 2) {
+                pageNum = totalPages - 4 + i;
+              } else {
+                pageNum = currentPage - 2 + i;
+              }
+              
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => setCurrentPage(pageNum)}
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    currentPage === pageNum
+                      ? 'bg-primary text-white'
+                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+          </div>
+          
+          <button
+            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+            disabled={currentPage === totalPages}
+            className="px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Next
+          </button>
+        </div>
+      )}
+
+      {/* Footer Info */}
+      <div className="mt-8 text-center text-sm text-slate-500 dark:text-slate-400">
+        <p>
+          Data provided by{' '}
+          <a
+            href="https://kalshi.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:text-primary-dark transition-colors"
+          >
+            Kalshi
+          </a>
+          {' '}• Updated in real-time
+        </p>
       </div>
     </div>
   );
