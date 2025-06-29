@@ -214,9 +214,9 @@ export default function BondView() {
                         <td className="px-4 py-2 text-right">{item.maturity_date || 'N/A'}</td>
                       </tr>
                     ))}
-                    <div className="w-full h-[400px]"></div>
                   </tbody>
                 </table>
+                <div className="w-full h-[400px]"></div>
               </div>
             )}
 
