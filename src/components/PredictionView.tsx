@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, Calendar, Tag, Search, Filter, ExternalLink, Loader2, AlertTriangle, DollarSign, BarChart3, Users, Clock, ArrowLeft, TrendingDown, ChevronDown, ChevronUp } from 'lucide-react';
+import { fetchOrderBook, OrderBookResponse } from '../utils/api';
 
 interface PredictionEvent {
   event_ticker: string;
@@ -68,6 +69,10 @@ const PredictionView: React.FC = () => {
   
   // State for expanded market cards
   const [expandedMarkets, setExpandedMarkets] = useState<Set<string>>(new Set());
+  
+  // State for order book data
+  const [orderBookData, setOrderBookData] = useState<{ [ticker: string]: OrderBookResponse }>({});
+  const [loadingOrderBooks, setLoadingOrderBooks] = useState<Set<string>>(new Set());
 
   // Get unique categories from the data
   const categories = React.useMemo(() => {
@@ -93,16 +98,43 @@ const PredictionView: React.FC = () => {
   const currentEvents = filteredEvents.slice(startIndex, endIndex);
 
   // Toggle market expansion
-  const toggleMarketExpansion = (marketTicker: string) => {
+  const toggleMarketExpansion = async (marketTicker: string) => {
     setExpandedMarkets(prev => {
       const newSet = new Set(prev);
       if (newSet.has(marketTicker)) {
         newSet.delete(marketTicker);
       } else {
         newSet.add(marketTicker);
+        // Load order book data when expanding
+        loadOrderBookData(marketTicker);
       }
       return newSet;
     });
+  };
+
+  // Load order book data for a specific market
+  const loadOrderBookData = async (marketTicker: string) => {
+    if (orderBookData[marketTicker] || loadingOrderBooks.has(marketTicker)) {
+      return; // Already loaded or loading
+    }
+
+    setLoadingOrderBooks(prev => new Set(prev).add(marketTicker));
+
+    try {
+      const orderBook = await fetchOrderBook(marketTicker);
+      setOrderBookData(prev => ({
+        ...prev,
+        [marketTicker]: orderBook
+      }));
+    } catch (error) {
+      console.error(`Failed to load order book for ${marketTicker}:`, error);
+    } finally {
+      setLoadingOrderBooks(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(marketTicker);
+        return newSet;
+      });
+    }
   };
 
   // Fetch market details for a specific event
@@ -145,6 +177,7 @@ const PredictionView: React.FC = () => {
     setSelectedEvent(null);
     setIsLoadingEventDetails(false);
     setExpandedMarkets(new Set());
+    setOrderBookData({}); // Clear order book data when going back
   };
 
   useEffect(() => {
@@ -326,6 +359,8 @@ const PredictionView: React.FC = () => {
                 <div className="space-y-4">
                   {selectedEvent.markets.map((market) => {
                     const isExpanded = expandedMarkets.has(market.ticker);
+                    const orderBook = orderBookData[market.ticker];
+                    const isLoadingOrderBook = loadingOrderBooks.has(market.ticker);
                     
                     return (
                       <div
@@ -460,6 +495,73 @@ const PredictionView: React.FC = () => {
                               </div>
                             </div>
 
+                            {/* Order Book Section */}
+                            <div className="mb-6">
+                              <h4 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Order Book</h4>
+                              
+                              {isLoadingOrderBook ? (
+                                <div className="bg-white dark:bg-slate-800 rounded-lg p-8 text-center">
+                                  <Loader2 className="w-6 h-6 text-primary mx-auto animate-spin mb-2" />
+                                  <p className="text-sm text-slate-600 dark:text-slate-400">Loading order book...</p>
+                                </div>
+                              ) : orderBook && orderBook.order_books.length > 0 ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  {/* YES Order Book */}
+                                  <div className="bg-white dark:bg-slate-800 rounded-lg p-4">
+                                    <h5 className="text-sm font-semibold text-green-700 dark:text-green-300 mb-3 text-center">
+                                      YES Orders
+                                    </h5>
+                                    <div className="space-y-1">
+                                      <div className="grid grid-cols-2 gap-2 text-xs font-medium text-slate-600 dark:text-slate-400 pb-2 border-b border-slate-200 dark:border-slate-600">
+                                        <div>Price</div>
+                                        <div className="text-right">Quantity</div>
+                                      </div>
+                                      {orderBook.order_books[0].yes.slice(0, 10).map((order, idx) => (
+                                        <div key={idx} className="grid grid-cols-2 gap-2 text-sm">
+                                          <div className="text-green-600 dark:text-green-400 font-medium">
+                                            {formatPrice(order.price)}
+                                          </div>
+                                          <div className="text-right text-slate-900 dark:text-white">
+                                            {order.quantity.toLocaleString()}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+
+                                  {/* NO Order Book (converted to YES sell orders) */}
+                                  <div className="bg-white dark:bg-slate-800 rounded-lg p-4">
+                                    <h5 className="text-sm font-semibold text-red-700 dark:text-red-300 mb-3 text-center">
+                                      NO Orders (YES Sell Orders)
+                                    </h5>
+                                    <div className="space-y-1">
+                                      <div className="grid grid-cols-2 gap-2 text-xs font-medium text-slate-600 dark:text-slate-400 pb-2 border-b border-slate-200 dark:border-slate-600">
+                                        <div>Price</div>
+                                        <div className="text-right">Quantity</div>
+                                      </div>
+                                      {orderBook.order_books[0].no.slice(0, 10).map((order, idx) => (
+                                        <div key={idx} className="grid grid-cols-2 gap-2 text-sm">
+                                          <div className="text-red-600 dark:text-red-400 font-medium">
+                                            {formatPrice(100 - order.price)} {/* Convert NO price to YES sell price */}
+                                          </div>
+                                          <div className="text-right text-slate-900 dark:text-white">
+                                            {order.quantity.toLocaleString()}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="bg-white dark:bg-slate-800 rounded-lg p-8 text-center">
+                                  <AlertTriangle className="w-6 h-6 text-amber-500 mx-auto mb-2" />
+                                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                                    Order book data not available
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+
                             {/* Market Statistics */}
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                               <div className="text-center">
@@ -521,7 +623,7 @@ const PredictionView: React.FC = () => {
                 <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-8 text-center">
                   <BarChart3 className="h-12 w-12 text-slate-400 mx-auto mb-4" />
                   <p className="text-slate-600 dark:text-slate-400">
-                    Price charts and order book data will be available here soon.
+                    Price charts and additional analysis tools will be available here soon.
                   </p>
                 </div>
               </div>

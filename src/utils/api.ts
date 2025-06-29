@@ -9,6 +9,20 @@ export interface CurrentPrice {
   longName?: string;
 }
 
+export interface OrderBookEntry {
+  price: number;
+  quantity: number;
+}
+
+export interface OrderBook {
+  yes: OrderBookEntry[];
+  no: OrderBookEntry[];
+}
+
+export interface OrderBookResponse {
+  order_books: OrderBook[];
+}
+
 export async function fetchMostActiveStocks(symbol: string): Promise<StockArray> {
   const url = `https://corsproxy.io/?https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?count=5&formatted=true&scrIds=MOST_ACTIVES&sortField=&sortType=&start=0&useRecordsResponse=false&fields=symbol`;
   try {
@@ -64,7 +78,7 @@ export async function fetchBondOrderBook(): Promise<TreasuryBondOrderBook> {
   }
 }
 
-export async function fetchBillOrderBook(): Promise<TreasuryBillsOrderBookOrderBook> {
+export async function fetchBillOrderBook(): Promise<TreasuryBillsOrderBook> {
   const url = "https://corsproxy.io/?https://www.barrons.com/market-data/bonds/treasuries?id=%7B%22treasury%22%3A%22BILLS%22%7D&type=mdc_treasury";
   try {
     const response = await fetch(url);
@@ -253,4 +267,36 @@ export async function fetchCurrentPrices(symbols: string[]): Promise<CurrentPric
   }
   
   return results;
+}
+
+/**
+ * Fetch order book data for prediction markets
+ * @param marketTickers - Comma-separated list of market tickers
+ * @returns Promise<OrderBookResponse>
+ */
+export async function fetchOrderBook(marketTickers: string): Promise<OrderBookResponse> {
+  const url = `https://corsproxy.io/?https://api.elections.kalshi.com/v1/markets/order_books?market_tickers=${encodeURIComponent(marketTickers)}`;
+  
+  try {
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    // Transform the raw API response to our typed format
+    const transformedData: OrderBookResponse = {
+      order_books: data.order_books.map((book: any) => ({
+        yes: book.yes.map(([price, quantity]: [number, number]) => ({ price, quantity })),
+        no: book.no.map(([price, quantity]: [number, number]) => ({ price, quantity }))
+      }))
+    };
+    
+    return transformedData;
+  } catch (error) {
+    console.error('Error fetching order book data:', error);
+    throw new Error(error instanceof Error ? error.message : 'Failed to fetch order book data');
+  }
 }
