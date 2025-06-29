@@ -424,12 +424,13 @@ const PredictionView: React.FC = () => {
         setError(null);
         
         const response = await fetch('https://corsproxy.io/?https://api.elections.kalshi.com/trade-api/v2/events?limit=200');
-        console.log(response);
+
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }
         
         const data: PredictionData = await response.json();
+        console.log(data);
         setPredictionData(data.events || []);
       } catch (err) {
         console.error('Error fetching prediction data:', err);
