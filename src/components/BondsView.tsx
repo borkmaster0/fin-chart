@@ -283,14 +283,14 @@ export default function BondView() {
                         <td className="px-4 py-2 text-right">{item.last}</td>
                         <td
                           className={`px-4 py-2 text-right ${
-                            item.change.startsWith('-') ? 'text-red-500' : item.change === "UNCH" ? '' : 'text-green-600'
+                            item.change.startsWith('-') ? 'text-green-500' : item.change === "UNCH" ? '' : 'text-red-600'
                           }`}
                         >
                           {item.change}
                         </td>
                         <td
                           className={`px-4 py-2 text-right ${
-                            item.change_pct.startsWith('-') ? 'text-red-500' : item.change === "UNCH" ? '' : 'text-green-600'
+                            item.change_pct.startsWith('-') ? 'text-green-500' : item.change === "UNCH" ? '' : 'text-red-600'
                           }`}
                         >
                           {item.change_pct}
@@ -346,7 +346,7 @@ export default function BondView() {
                             <td className="px-4 py-2 text-right text-green-600">{bond.bid}</td>
                             <td className="px-4 py-2 text-right text-red-500">{bond.ask}</td>
                             <td className="px-4 py-2 text-right">{bond.askYield}</td>
-                            <td className={`px-4 py-2 text-right ${bond.change > 0 ? 'text-green-600' : bond.change < 0 ? 'text-red-500' : ''}`}>{bond.change === 'unch.' ? '0.0000' : bond.change}</td>
+                            <td className={`px-4 py-2 text-right ${bond.change > 0 ? 'text-red-600' : bond.change < 0 ? 'text-green-500' : ''}`}>{bond.change === 'unch.' ? '0.0000' : bond.change}</td>
                           </tr>
                         ))}
                       </tbody>
