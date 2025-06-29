@@ -15,8 +15,8 @@ export interface OrderBookEntry {
 }
 
 export interface OrderBook {
-  yes: OrderBookEntry[];
-  no: OrderBookEntry[];
+  yes: OrderBookEntry[] | null;
+  no: OrderBookEntry[] | null;
 }
 
 export interface OrderBookResponse {
@@ -286,11 +286,11 @@ export async function fetchOrderBook(marketTickers: string): Promise<OrderBookRe
     
     const data = await response.json();
     
-    // Transform the raw API response to our typed format
+    // Transform the raw API response to our typed format, handling null arrays
     const transformedData: OrderBookResponse = {
       order_books: data.order_books.map((book: any) => ({
-        yes: book.yes.map(([price, quantity]: [number, number]) => ({ price, quantity })),
-        no: book.no.map(([price, quantity]: [number, number]) => ({ price, quantity }))
+        yes: book.yes ? book.yes.map(([price, quantity]: [number, number]) => ({ price, quantity })) : null,
+        no: book.no ? book.no.map(([price, quantity]: [number, number]) => ({ price, quantity })) : null
       }))
     };
     

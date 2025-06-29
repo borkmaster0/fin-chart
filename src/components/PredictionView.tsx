@@ -516,16 +516,22 @@ const PredictionView: React.FC = () => {
                                         <div>Price</div>
                                         <div className="text-right">Quantity</div>
                                       </div>
-                                      {orderBook.order_books[0].yes.slice(0, 10).map((order, idx) => (
-                                        <div key={idx} className="grid grid-cols-2 gap-2 text-sm">
-                                          <div className="text-green-600 dark:text-green-400 font-medium">
-                                            {formatPrice(order.price)}
+                                      {orderBook.order_books[0].yes ? (
+                                        orderBook.order_books[0].yes.slice(0, 10).map((order, idx) => (
+                                          <div key={idx} className="grid grid-cols-2 gap-2 text-sm">
+                                            <div className="text-green-600 dark:text-green-400 font-medium">
+                                              {formatPrice(order.price)}
+                                            </div>
+                                            <div className="text-right text-slate-900 dark:text-white">
+                                              {order.quantity.toLocaleString()}
+                                            </div>
                                           </div>
-                                          <div className="text-right text-slate-900 dark:text-white">
-                                            {order.quantity.toLocaleString()}
-                                          </div>
+                                        ))
+                                      ) : (
+                                        <div className="text-center text-slate-500 dark:text-slate-400 py-4">
+                                          No YES orders available
                                         </div>
-                                      ))}
+                                      )}
                                     </div>
                                   </div>
 
@@ -539,16 +545,22 @@ const PredictionView: React.FC = () => {
                                         <div>Price</div>
                                         <div className="text-right">Quantity</div>
                                       </div>
-                                      {orderBook.order_books[0].no.slice(0, 10).map((order, idx) => (
-                                        <div key={idx} className="grid grid-cols-2 gap-2 text-sm">
-                                          <div className="text-red-600 dark:text-red-400 font-medium">
-                                            {formatPrice(100 - order.price)} {/* Convert NO price to YES sell price */}
+                                      {orderBook.order_books[0].no ? (
+                                        orderBook.order_books[0].no.slice(0, 10).map((order, idx) => (
+                                          <div key={idx} className="grid grid-cols-2 gap-2 text-sm">
+                                            <div className="text-red-600 dark:text-red-400 font-medium">
+                                              {formatPrice(100 - order.price)} {/* Convert NO price to YES sell price */}
+                                            </div>
+                                            <div className="text-right text-slate-900 dark:text-white">
+                                              {order.quantity.toLocaleString()}
+                                            </div>
                                           </div>
-                                          <div className="text-right text-slate-900 dark:text-white">
-                                            {order.quantity.toLocaleString()}
-                                          </div>
+                                        ))
+                                      ) : (
+                                        <div className="text-center text-slate-500 dark:text-slate-400 py-4">
+                                          No NO orders available
                                         </div>
-                                      ))}
+                                      )}
                                     </div>
                                   </div>
                                 </div>
