@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { createChart, ISeriesApi, LineSeries, ColorType, CrosshairMode } from 'lightweight-charts';
+import { createChart, ISeriesApi, LineSeries, ColorType, CrosshairMode, createYieldCurveChart } from 'lightweight-charts';
 import { fetchBondOrderBook, fetchBillOrderBook, fetchQuickBondData, fetchBondData } from '../utils/api';
 import { TreasuryBondOrderBook, TreasuryBillsOrderBook } from '../types/index';
 
@@ -148,7 +148,7 @@ export default function BondView() {
   useEffect(() => {
     if (!yieldCurveChart.current || yieldChartData.length === 0 || activeTab !== 'yield-curve') return;
 
-    const chart = createChart(yieldCurveChart.current, {
+    const chart = createYieldCurveChart(yieldCurveChart.current, {
       width: yieldCurveChart.current.clientWidth,
       height: 400,
       layout: {
@@ -166,7 +166,7 @@ export default function BondView() {
       timeScale: { borderVisible: false },
     });
 
-    const lineSeries = chart.addLineSeries({
+    const lineSeries = chart.addSeries(LineSeries, {
       color: '#2962FF',
       lineWidth: 3,
       priceFormat: {
@@ -226,7 +226,7 @@ export default function BondView() {
     selectedSymbols.forEach((symbol, idx) => {
       const data = chartData[symbol];
       if (data) {
-        const series = chart.addLineSeries({
+        const series = chart.addSeries(LineSeries, {
           color: colors[idx % colors.length],
           lineWidth: 2,
           title: symbol,
