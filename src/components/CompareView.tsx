@@ -366,11 +366,10 @@ const ChartExpressionApp: React.FC = () => {
 
       <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
         <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">
-          US Treasury Yield Curve
+          How to Use
         </h3>
         <p className="text-sm text-blue-800 dark:text-blue-200">
-          This chart shows the current yield curve for US Treasury securities, plotting yield against maturity in months.
-          The yield curve is a key indicator of economic conditions and interest rate expectations.
+          Type in the symbol in brackets, e.g. [SPY]. Some indicies don't work, like ^VIX. An example would be [SPY]/[QQQ].
         </p>
       </div>
       <div className="h-[25px]"></div>
