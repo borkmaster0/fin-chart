@@ -344,6 +344,7 @@ const PredictionView: React.FC = () => {
         try {
           // Find corresponding market info for title
           const marketInfo = event.markets.find(m => m.ticker.includes(event.series_ticker));
+          console.log(marketInfo);
           const marketTitle = marketInfo?.yes_sub_title || marketInfo?.title || `Market ${i + 1}`;
 
           // Calculate proper start_ts based on API requirements
