@@ -25,11 +25,12 @@ function convertYieldData(data: YieldData[]): OutputData[] {
     return data.map(item => {
         // Extract the numeric part and the unit (M or Y) from the symbol
         const symbolMatch = item.symbol.match(/US(\d+)([MY])/);
+        console.log(symbolMatch);
         if (!symbolMatch) {
             console.warn(`Could not parse symbol: ${item.symbol}. Skipping this item.`);
             return null;
         }
-
+      
         const value = parseInt(symbolMatch[1]);
         const unit = symbolMatch[2];
 
