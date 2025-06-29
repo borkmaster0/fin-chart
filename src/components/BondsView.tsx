@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { createChart, ISeriesApi, LineSeries, ColorType, CrosshairMode } from 'lightweight-charts';
+import { createChart, ISeriesApi, LineSeries, ColorType, CrosshairMode, createYieldCurveChart } from 'lightweight-charts';
 import { fetchBondOrderBook, fetchBillOrderBook, fetchQuickBondData, fetchBondData } from '../utils/api';
 import { TreasuryBondOrderBook, TreasuryBillsOrderBook } from '../types/index';
 
