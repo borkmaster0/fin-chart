@@ -369,7 +369,7 @@ const ChartExpressionApp: React.FC = () => {
           How to Use
         </h3>
         <p className="text-sm text-blue-800 dark:text-blue-200">
-          Type in the symbol in brackets, e.g. [SPY]. Some indicies don't work, like ^VIX. An example would be [SPY]/[QQQ]. An expression like ([SPY]^[^SPX]-[QQQ]*[SPXS]+[SPXL])-[SPXS] works, but might take longer.
+          Type in the symbol in brackets, e.g. [SPY]. Some indicies don't work, like ^VIX. An example would be [SPY]/[QQQ]. An expression like ([SPY]^[MSTR]-[QQQ]*[SPXS]+[SPXL])-[SPXS] works, but might take longer.
         </p>
       </div>
       <div className="h-[25px]"></div>
