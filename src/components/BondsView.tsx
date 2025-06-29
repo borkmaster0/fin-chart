@@ -36,6 +36,7 @@ export default function BondView() {
         setLoading(true);
         const quickData = await fetchQuickBondData();
         setBondData(quickData.data);
+        console.log(quickData);
 
         const bondBook = await fetchBondOrderBook();
         setBondOrderBook(bondBook.notes);
