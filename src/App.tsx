@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Sun, Moon, LineChart, Menu, X, RefreshCw, Plus, BarChart3, Briefcase, TrendingUp } from 'lucide-react';
+import { Sun, Moon, LineChart, Menu, X, RefreshCw, Plus, BarChart3, Briefcase, TrendingUp, Target } from 'lucide-react';
 import SymbolSearch from './components/SymbolSearch';
 import ChartContainer from './components/ChartContainer';
 import TimeframeSelector from './components/TimeframeSelector';
@@ -10,6 +10,7 @@ import SymbolTransactions from './components/SymbolTransactions';
 import BacktestingView from './components/BacktestingView';
 import CompareView from './components/CompareView';
 import BondsView from './components/BondsView';
+import PredictionView from './components/PredictionView';
 import { fetchChartData } from './utils/api';
 import { ChartData } from './types';
 import { loadSettings, saveCurrentSymbol, loadCurrentSymbol } from './utils/db';
@@ -37,7 +38,7 @@ function App() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showPortfolioDialog, setShowPortfolioDialog] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [currentView, setCurrentView] = useState<'chart' | 'portfolio' | 'backtesting' | 'advanced' | 'bonds'>('chart');
+  const [currentView, setCurrentView] = useState<'chart' | 'portfolio' | 'backtesting' | 'advanced' | 'bonds' | 'prediction'>('chart');
 
   // Load saved symbol on app initialization
   useEffect(() => {
@@ -183,7 +184,8 @@ function App() {
     { id: 'portfolio', label: 'Portfolio', icon: Briefcase },
     { id: 'backtesting', label: 'Backtesting', icon: TrendingUp },
     { id: 'advanced', label: 'Advanced', icon: LineChart },
-    { id: 'bonds', label: 'Bonds', icon: LineChart }
+    { id: 'bonds', label: 'Bonds', icon: LineChart },
+    { id: 'prediction', label: 'Prediction', icon: Target }
   ];
 
   return (
@@ -417,6 +419,10 @@ function App() {
 
         {currentView === 'bonds' && (
           <BondsView />
+        )}
+
+        {currentView === 'prediction' && (
+          <PredictionView />
         )}
       </main>
       
