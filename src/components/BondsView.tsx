@@ -159,11 +159,8 @@ export default function BondView() {
         vertLines: { color: isDarkMode ? '#374151' : '#e5e7eb' },
         horzLines: { color: isDarkMode ? '#374151' : '#e5e7eb' },
       },
-      crosshair: {
-        mode: CrosshairMode.Normal,
-      },
-      priceScale: { borderVisible: false },
-      timeScale: { borderVisible: false },
+      handleScroll: false, 
+      handleScale: false,
     });
 
     const lineSeries = chart.addSeries(LineSeries, {
