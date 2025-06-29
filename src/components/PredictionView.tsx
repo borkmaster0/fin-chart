@@ -118,7 +118,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ candlestickData, is
     // Add series for each market
     candlestickData.forEach((marketData, index) => {
       const colorSet = colors[index % colors.length];
-      
+      console.log(marketData);
       const series = chart.addSeries(CandlestickSeries, {
         ...colorSet,
         borderVisible: true,
