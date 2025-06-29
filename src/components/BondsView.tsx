@@ -26,7 +26,6 @@ function convertYieldData(data: YieldData[]): OutputData[] {
         // Extract the numeric part and the unit (MO or YR) from the symbol
         // Updated regex to handle "US 1-MO", "US 3-YR" format
         const symbolMatch = item.symbol.match(/US\s+(\d+)-?(MO|YR)/);
-        console.log(symbolMatch, item);
         if (!symbolMatch) {
             console.warn(`Could not parse symbol: ${item.symbol}. Skipping this item.`);
             return null;
@@ -89,7 +88,6 @@ export default function BondView() {
         
         const convertedData = convertYieldData(yieldData);
         setYieldChartData(convertedData);
-        console.log('Converted yield data:', convertedData);
 
         const bondBook = await fetchBondOrderBook();
         setBondOrderBook(bondBook.notes);
