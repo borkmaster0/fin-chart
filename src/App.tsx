@@ -193,7 +193,7 @@ function App() {
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
           <div className="flex items-center space-x-2">
             <LineChart className="h-6 w-6 text-primary" />
-            <h1 className="text-xl font-bold text-slate-900 dark:text-white text-left">FinChart</h1>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-white">FinChart</h1>
           </div>
           
           {/* Navigation Menu - Desktop */}
