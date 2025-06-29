@@ -351,7 +351,7 @@ const PredictionView: React.FC = () => {
           const maxHistoryStartTs = endTs - (5000 * periodInterval * 60); // 5000 intervals of 60 minutes, converted to seconds
           
           // Get market open date and convert to timestamp
-          const marketOpenTs = Math.floor(new Date(marketDetail.openDate).getTime() / 1000);
+          const marketOpenTs = Math.floor(new Date(marketDetail.openDate).getTime() / 1000) + 3600;
           
           // Use the later of the two timestamps to ensure we're within API limits and after market opening
           const startTs = Math.max(maxHistoryStartTs, marketOpenTs);
