@@ -348,13 +348,18 @@ const PredictionView: React.FC = () => {
 
           // Calculate proper start_ts based on API requirements
           // Maximum history allowed: 5000 period_intervals (60 minutes each)
-          const maxHistoryStartTs = endTs - (5000 * periodInterval * 60); // 5000 intervals of 60 minutes, converted to seconds
+          const maxHistoryStartTs = endTs - (4000 * periodInterval * 60); // 5000 intervals of 60 minutes, converted to seconds
           
           // Get market open date and convert to timestamp
           const marketOpenTs = Math.floor(new Date(marketDetail.openDate).getTime() / 1000) + 3600;
+
+          function roundToHour(date) {
+            p = 60 * 60 * 1000; // milliseconds in an hour
+            return new Date(Math.round(date.getTime() / p ) * p);
+          }
           
           // Use the later of the two timestamps to ensure we're within API limits and after market opening
-          const startTs = endTs - 12376800 //Math.max(maxHistoryStartTs, marketOpenTs);
+          const startTs = Math.max(maxHistoryStartTs, marketOpenTs);
 
           const candlestickResponse = await fetchCandlestickData(
             event.series_ticker,
