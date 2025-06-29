@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { createChart, ISeriesApi, LineSeries, ColorType, CrosshairMode } from 'lightweight-charts';
+import { createChart, ISeriesApi, LineSeries, ColorType, CrosshairMode, createYieldCurveChart } from 'lightweight-charts';
 import { fetchBondOrderBook, fetchBillOrderBook, fetchQuickBondData, fetchBondData } from '../utils/api';
 import { TreasuryBondOrderBook, TreasuryBillsOrderBook } from '../types/index';
 
@@ -150,44 +150,17 @@ export default function BondView() {
   useEffect(() => {
     if (!yieldCurveChart.current || yieldChartData.length === 0 || activeTab !== 'yield-curve') return;
 
-    const chart = createChart(yieldCurveChart.current, {
-      width: yieldCurveChart.current.clientWidth,
-      height: 400,
-      layout: {
-        background: { color: isDarkMode ? '#1f2937' : '#ffffff' },
-        textColor: isDarkMode ? '#cbd5e1' : '#111827',
-      },
-      grid: {
-        vertLines: { color: isDarkMode ? '#374151' : '#e5e7eb' },
-        horzLines: { color: isDarkMode ? '#374151' : '#e5e7eb' },
-      },
-      crosshair: {
-        mode: CrosshairMode.Normal,
-      },
-      priceScale: { 
-        borderVisible: false,
-        title: 'Yield (%)'
-      },
-      timeScale: { 
-        borderVisible: false,
-        title: 'Maturity (Months)'
-      },
-    });
+    const chart = createYieldCurveChart(yieldCurveChart.current, {
+        layout: { textColor: 'black', background: { type: 'solid', color: 'white' } },
+        yieldCurve: { baseResolution: 1, minimumTimeRange: 10, startTimeRange: 3 },
+        handleScroll: false, handleScale: false,
+    }
 
-    const series = chart.addSeries(LineSeries, {
-      color: '#2962FF',
-      lineWidth: 3,
-      title: 'US Treasury Yield Curve',
-      priceFormat: {
-        type: 'number',
-        precision: 3,
-        minMove: 1 / Math.pow(10, 3),
-      },
-    });
+    const lineSeries = chart.addSeries(LineSeries, { color: '#2962FF' });
 
     // Sort data by time (months) to ensure proper curve
     const sortedData = [...yieldChartData].sort((a, b) => a.time - b.time);
-    series.setData(sortedData);
+    lineSeries.setData(sortedData);
 
     chart.timeScale().fitContent();
 
