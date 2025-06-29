@@ -517,7 +517,7 @@ const PredictionView: React.FC = () => {
                                         <div className="text-right">Quantity</div>
                                       </div>
                                       {orderBook.order_books[0].yes ? (
-                                        orderBook.order_books[0].yes.slice(0, 10).map((order, idx) => (
+                                        orderBook.order_books[0].yes.slice(0, 10).reverse().map((order, idx) => (
                                           <div key={idx} className="grid grid-cols-2 gap-2 text-sm">
                                             <div className="text-green-600 dark:text-green-400 font-medium">
                                               {formatPrice(order.price)}
