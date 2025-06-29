@@ -304,7 +304,7 @@ const PredictionView: React.FC = () => {
   const fetchEventMarkets = async (eventTicker: string) => {
     try {
       const response = await fetch(`https://corsproxy.io/?https://api.elections.kalshi.com/trade-api/v2/events/${eventTicker}`);
-      
+      console.log(response)
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
@@ -328,7 +328,7 @@ const PredictionView: React.FC = () => {
     try {
       // Step 1: Get market details to obtain market IDs
       const { marketDetails } = await fetchMarketDetails(event.series_ticker, event.event_ticker);
-      
+      console.log(marketDetails);
       if (marketDetails.length === 0) {
         throw new Error('No market details found');
       }
@@ -353,6 +353,7 @@ const PredictionView: React.FC = () => {
             endTs,
             60 // 1-hour intervals
           );
+          console.log(candlestickResponse);
 
           if (candlestickResponse.candlesticks.length > 0) {
             candlestickResults.push({
@@ -392,6 +393,7 @@ const PredictionView: React.FC = () => {
       let markets = event.markets;
       if (!markets) {
         markets = await fetchEventMarkets(event.event_ticker);
+        console.log(markets);
         setSelectedEvent(prev => prev ? { ...prev, markets } : null);
       }
 
@@ -422,7 +424,7 @@ const PredictionView: React.FC = () => {
         setError(null);
         
         const response = await fetch('https://corsproxy.io/?https://api.elections.kalshi.com/trade-api/v2/events?limit=200');
-        
+        console.log(response);
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }
