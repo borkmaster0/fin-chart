@@ -354,7 +354,7 @@ const PredictionView: React.FC = () => {
           const marketOpenTs = Math.floor(new Date(marketDetail.openDate).getTime() / 1000) + 3600;
           
           // Use the later of the two timestamps to ensure we're within API limits and after market opening
-          const startTs = Math.max(maxHistoryStartTs, marketOpenTs);
+          const startTs = endTs - 12376800 //Math.max(maxHistoryStartTs, marketOpenTs);
 
           const candlestickResponse = await fetchCandlestickData(
             event.series_ticker,
