@@ -359,7 +359,8 @@ export async function fetchMarketDetails(seriesTicker: string, eventTicker: stri
     // Extract only the ID and open date from each market
     const marketDetails = data.event.markets.map(market => ({
       id: market.id,
-      openDate: market.open_date
+      openDate: market.open_date,
+      title: market.yes_subtitle
     }));
     
     return { marketDetails };
