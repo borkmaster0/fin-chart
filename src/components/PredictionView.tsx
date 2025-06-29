@@ -355,7 +355,7 @@ const PredictionView: React.FC = () => {
 
           function roundToHour(date) {
             p = 60 * 60 * 1000; // milliseconds in an hour
-            return new Date(Math.round(date.getTime() / p ) * p);
+            return new Date(Math.ceil(date.getTime() / p ) * p);
           }
           
           // Use the later of the two timestamps to ensure we're within API limits and after market opening
