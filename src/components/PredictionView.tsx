@@ -343,7 +343,7 @@ const PredictionView: React.FC = () => {
         
         try {
           // Find corresponding market info for title
-          const marketTitle = marketDetail.title
+          const marketTitle = marketDetail.title;
 
           // Calculate proper start_ts based on API requirements
           // Maximum history allowed: 5000 period_intervals (60 minutes each)
