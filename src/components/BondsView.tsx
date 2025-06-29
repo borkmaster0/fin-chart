@@ -23,6 +23,9 @@ export default function BondView() {
   const chartContainerRef = useRef<HTMLDivElement | null>(null);
   const [chartLoaded, setChartLoaded] = useState(false);
   const [chartData, setChartData] = useState<Record<string, { time: number; value: number }[]>>({});  
+  const yieldCurveChart = useRef<HTMLDivElement | null>(null);
+  const [yieldChartLoaded, setYieldChartLoaded] = useState(false);
+  const [yieldChartData, setYieldChartData] = useState<Record<string, { time: number; value: number }[]>>({});
 
   useEffect(() => {
     const storedDarkMode = localStorage.getItem('darkMode');
