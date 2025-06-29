@@ -78,6 +78,13 @@ export default function BondView() {
     'US10Y', 'US20Y', 'US30Y'
   ]);
 
+  // Chart colors for legend
+  const chartColors = [
+    '#2962FF', '#FF6D00', '#D50000', '#00C853', '#AA00FF',
+    '#0091EA', '#C51162', '#FFD600', '#6200EA', '#00BFA5',
+    '#FF4081', '#3D5AFE', '#FFAB00'
+  ];
+
   useEffect(() => {
     const storedDarkMode = localStorage.getItem('darkMode');
     setIsDarkMode(storedDarkMode === 'true');
@@ -213,18 +220,12 @@ export default function BondView() {
       timeScale: { borderVisible: false },
     });
   
-    const colors = [
-      '#2962FF', '#FF6D00', '#D50000', '#00C853', '#AA00FF',
-      '#0091EA', '#C51162', '#FFD600', '#6200EA', '#00BFA5',
-      '#FF4081', '#3D5AFE', '#FFAB00'
-    ];
-  
     // Only create series for selected symbols
     selectedSymbols.forEach((symbol, idx) => {
       const data = chartData[symbol];
       if (data) {
         const series = chart.addSeries(LineSeries, {
-          color: colors[idx % colors.length],
+          color: chartColors[idx % chartColors.length],
           lineWidth: 2,
           title: symbol,
           priceFormat: {
@@ -478,6 +479,26 @@ export default function BondView() {
                     )}
                   </div>
                 </div>
+
+                {/* Chart Legend */}
+                {selectedSymbols.length > 0 && (
+                  <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                    <h4 className="text-sm font-semibold mb-3 text-gray-700 dark:text-gray-300">Chart Legend</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+                      {selectedSymbols.map((symbol, idx) => (
+                        <div key={symbol} className="flex items-center gap-2">
+                          <div 
+                            className="w-4 h-0.5 rounded"
+                            style={{ backgroundColor: chartColors[idx % chartColors.length] }}
+                          ></div>
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            {symbol}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Chart */}
                 {selectedSymbols.length > 0 ? (
