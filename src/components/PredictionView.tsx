@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, Calendar, Tag, Search, Filter, ExternalLink, Loader2, AlertTriangle, DollarSign, BarChart3, Users, Clock } from 'lucide-react';
+import { TrendingUp, Calendar, Tag, Search, Filter, ExternalLink, Loader2, AlertTriangle, DollarSign, BarChart3, Users, Clock, ArrowLeft, TrendingDown } from 'lucide-react';
 
 interface PredictionEvent {
   event_ticker: string;
@@ -60,8 +60,11 @@ const PredictionView: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10); // Reduced for better performance with market data
-  const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set());
+  const [itemsPerPage] = useState(10);
+  
+  // New state for detailed view
+  const [selectedEvent, setSelectedEvent] = useState<EventWithMarkets | null>(null);
+  const [isLoadingEventDetails, setIsLoadingEventDetails] = useState(false);
 
   // Get unique categories from the data
   const categories = React.useMemo(() => {
@@ -103,43 +106,27 @@ const PredictionView: React.FC = () => {
     }
   };
 
-  // Toggle event expansion and load markets if needed
-  const toggleEventExpansion = async (eventTicker: string) => {
-    const newExpanded = new Set(expandedEvents);
+  // Show detailed event view
+  const showEventDetails = async (event: EventWithMarkets) => {
+    setIsLoadingEventDetails(true);
+    setSelectedEvent(event);
     
-    if (expandedEvents.has(eventTicker)) {
-      newExpanded.delete(eventTicker);
-    } else {
-      newExpanded.add(eventTicker);
-      
-      // Load markets if not already loaded
-      const event = predictionData.find(e => e.event_ticker === eventTicker);
-      if (event && !event.markets && !event.isLoadingMarkets) {
-        // Set loading state
-        setPredictionData(prev => prev.map(e => 
-          e.event_ticker === eventTicker 
-            ? { ...e, isLoadingMarkets: true }
-            : e
-        ));
-        
-        try {
-          const markets = await fetchEventMarkets(eventTicker);
-          setPredictionData(prev => prev.map(e => 
-            e.event_ticker === eventTicker 
-              ? { ...e, markets, isLoadingMarkets: false }
-              : e
-          ));
-        } catch (err) {
-          setPredictionData(prev => prev.map(e => 
-            e.event_ticker === eventTicker 
-              ? { ...e, isLoadingMarkets: false, marketsError: 'Failed to load market data' }
-              : e
-          ));
-        }
+    try {
+      if (!event.markets) {
+        const markets = await fetchEventMarkets(event.event_ticker);
+        setSelectedEvent(prev => prev ? { ...prev, markets } : null);
       }
+    } catch (err) {
+      setSelectedEvent(prev => prev ? { ...prev, marketsError: 'Failed to load market data' } : null);
+    } finally {
+      setIsLoadingEventDetails(false);
     }
-    
-    setExpandedEvents(newExpanded);
+  };
+
+  // Go back to list view
+  const goBackToList = () => {
+    setSelectedEvent(null);
+    setIsLoadingEventDetails(false);
   };
 
   useEffect(() => {
@@ -204,6 +191,281 @@ const PredictionView: React.FC = () => {
     return 'text-slate-600 dark:text-slate-400';
   };
 
+  // If an event is selected, show the detailed view
+  if (selectedEvent) {
+    return (
+      <div className="max-w-7xl mx-auto p-6">
+        {/* Header with back button */}
+        <div className="mb-8">
+          <button
+            onClick={goBackToList}
+            className="flex items-center gap-2 text-primary hover:text-primary-dark font-medium mb-4 transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Prediction Markets
+          </button>
+          
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-3">
+                <span className={`px-3 py-1 rounded-md text-sm font-medium ${getCategoryColor(selectedEvent.category)}`}>
+                  {selectedEvent.category}
+                </span>
+                {selectedEvent.mutually_exclusive && (
+                  <span className="px-3 py-1 rounded-md text-sm font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
+                    Mutually Exclusive
+                  </span>
+                )}
+                <span className="px-3 py-1 rounded-md text-sm font-medium bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-mono">
+                  {selectedEvent.event_ticker}
+                </span>
+              </div>
+              
+              <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-3 leading-tight">
+                {selectedEvent.title}
+              </h1>
+              
+              {selectedEvent.sub_title && (
+                <div className="flex items-center gap-2 text-lg text-slate-600 dark:text-slate-400 mb-4">
+                  <Calendar className="h-5 w-5" />
+                  <span>{selectedEvent.sub_title}</span>
+                </div>
+              )}
+            </div>
+            
+            <a
+              href={`https://kalshi.com/events/${selectedEvent.event_ticker}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark font-medium transition-colors"
+            >
+              <span>Trade on Kalshi</span>
+              <ExternalLink className="h-4 w-4" />
+            </a>
+          </div>
+        </div>
+
+        {/* Markets Section */}
+        <div className="space-y-6">
+          {isLoadingEventDetails ? (
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-12 text-center">
+              <Loader2 className="w-8 h-8 text-primary mx-auto animate-spin mb-4" />
+              <p className="text-slate-600 dark:text-slate-400">Loading market data...</p>
+            </div>
+          ) : selectedEvent.marketsError ? (
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-12 text-center">
+              <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Failed to Load Market Data</h3>
+              <p className="text-slate-600 dark:text-slate-400">{selectedEvent.marketsError}</p>
+            </div>
+          ) : selectedEvent.markets && selectedEvent.markets.length > 0 ? (
+            <>
+              {/* Market Overview */}
+              <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+                <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">
+                  Market Overview ({selectedEvent.markets.length} active markets)
+                </h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                  {/* Total Volume */}
+                  <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-slate-900 dark:text-white">
+                      {formatVolume(selectedEvent.markets.reduce((sum, market) => sum + market.volume, 0))}
+                    </div>
+                    <div className="text-sm text-slate-600 dark:text-slate-400">Total Volume</div>
+                  </div>
+                  
+                  {/* Total Open Interest */}
+                  <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-slate-900 dark:text-white">
+                      {formatVolume(selectedEvent.markets.reduce((sum, market) => sum + market.open_interest, 0))}
+                    </div>
+                    <div className="text-sm text-slate-600 dark:text-slate-400">Open Interest</div>
+                  </div>
+                  
+                  {/* Total Liquidity */}
+                  <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-slate-900 dark:text-white">
+                      {formatVolume(selectedEvent.markets.reduce((sum, market) => sum + market.liquidity, 0))}
+                    </div>
+                    <div className="text-sm text-slate-600 dark:text-slate-400">Total Liquidity</div>
+                  </div>
+                  
+                  {/* Active Markets */}
+                  <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-slate-900 dark:text-white">
+                      {selectedEvent.markets.filter(m => m.status === 'active').length}
+                    </div>
+                    <div className="text-sm text-slate-600 dark:text-slate-400">Active Markets</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Individual Markets */}
+              <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+                <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-6">Individual Markets</h2>
+                
+                <div className="space-y-6">
+                  {selectedEvent.markets.map((market) => (
+                    <div
+                      key={market.ticker}
+                      className="border border-slate-200 dark:border-slate-700 rounded-lg p-6 hover:shadow-md transition-shadow"
+                    >
+                      {/* Market Header */}
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
+                            {market.yes_sub_title || market.title || 'Market'}
+                          </h3>
+                          
+                          {market.custom_strike && (
+                            <div className="flex flex-wrap gap-2 mb-2">
+                              {Object.entries(market.custom_strike).map(([key, value]) => (
+                                <span key={key} className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded text-sm">
+                                  {key}: {value}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          
+                          <div className="text-sm text-slate-600 dark:text-slate-400 font-mono">
+                            {market.ticker}
+                          </div>
+                        </div>
+                        
+                        <span className={`px-3 py-1 rounded-md text-sm font-medium ${
+                          market.status === 'active' 
+                            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+                            : 'bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300'
+                        }`}>
+                          {market.status}
+                        </span>
+                      </div>
+
+                      {/* Price Display */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        {/* YES Side */}
+                        <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+                          <div className="text-center">
+                            <div className="flex items-center justify-center gap-2 mb-2">
+                              <TrendingUp className="h-5 w-5 text-green-600" />
+                              <span className="text-lg font-semibold text-green-700 dark:text-green-300">YES</span>
+                            </div>
+                            <div className="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">
+                              {formatPrice(market.last_price)}
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 text-sm">
+                              <div>
+                                <div className="text-green-700 dark:text-green-300 font-medium">Bid</div>
+                                <div className="text-green-600 dark:text-green-400">{formatPrice(market.yes_bid)}</div>
+                              </div>
+                              <div>
+                                <div className="text-green-700 dark:text-green-300 font-medium">Ask</div>
+                                <div className="text-green-600 dark:text-green-400">{formatPrice(market.yes_ask)}</div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* NO Side */}
+                        <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
+                          <div className="text-center">
+                            <div className="flex items-center justify-center gap-2 mb-2">
+                              <TrendingDown className="h-5 w-5 text-red-600" />
+                              <span className="text-lg font-semibold text-red-700 dark:text-red-300">NO</span>
+                            </div>
+                            <div className="text-3xl font-bold text-red-600 dark:text-red-400 mb-2">
+                              {formatPrice(100 - market.last_price)}
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 text-sm">
+                              <div>
+                                <div className="text-red-700 dark:text-red-300 font-medium">Bid</div>
+                                <div className="text-red-600 dark:text-red-400">{formatPrice(market.no_bid)}</div>
+                              </div>
+                              <div>
+                                <div className="text-red-700 dark:text-red-300 font-medium">Ask</div>
+                                <div className="text-red-600 dark:text-red-400">{formatPrice(market.no_ask)}</div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Market Statistics */}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                        <div className="text-center">
+                          <div className="text-sm text-slate-600 dark:text-slate-400 mb-1">Volume</div>
+                          <div className="font-semibold text-slate-900 dark:text-white">{formatVolume(market.volume)}</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-sm text-slate-600 dark:text-slate-400 mb-1">24h Volume</div>
+                          <div className="font-semibold text-slate-900 dark:text-white">{formatVolume(market.volume_24h)}</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-sm text-slate-600 dark:text-slate-400 mb-1">Open Interest</div>
+                          <div className="font-semibold text-slate-900 dark:text-white">{formatVolume(market.open_interest)}</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-sm text-slate-600 dark:text-slate-400 mb-1">Liquidity</div>
+                          <div className="font-semibold text-slate-900 dark:text-white">{formatVolume(market.liquidity)}</div>
+                        </div>
+                      </div>
+
+                      {/* Market Timing */}
+                      <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <div className="text-slate-600 dark:text-slate-400 mb-1">Market Opens</div>
+                            <div className="font-medium text-slate-900 dark:text-white">
+                              {new Date(market.open_time).toLocaleString()}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-slate-600 dark:text-slate-400 mb-1">Market Closes</div>
+                            <div className="font-medium text-slate-900 dark:text-white">
+                              {new Date(market.close_time).toLocaleString()}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Market Rules */}
+                      {market.rules_primary && (
+                        <div className="border-t border-slate-200 dark:border-slate-700 pt-4 mt-4">
+                          <div className="text-sm text-slate-600 dark:text-slate-400 mb-1">Resolution Rules</div>
+                          <div className="text-sm text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-700/50 rounded p-3">
+                            {market.rules_primary}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Placeholder for future features */}
+              <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+                <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">Charts & Analysis</h2>
+                <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-8 text-center">
+                  <BarChart3 className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+                  <p className="text-slate-600 dark:text-slate-400">
+                    Price charts and order book data will be available here soon.
+                  </p>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-12 text-center">
+              <AlertTriangle className="w-8 h-8 text-slate-400 mx-auto mb-4" />
+              <p className="text-slate-600 dark:text-slate-400">No active markets found for this event.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Main list view
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto p-6">
@@ -347,133 +609,14 @@ const PredictionView: React.FC = () => {
                   </div>
 
                   <button
-                    onClick={() => toggleEventExpansion(event.event_ticker)}
-                    className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-primary hover:text-primary-dark bg-primary/10 hover:bg-primary/20 rounded-md transition-colors"
+                    onClick={() => showEventDetails(event)}
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary-dark rounded-md transition-colors"
                   >
                     <BarChart3 className="h-4 w-4" />
-                    {expandedEvents.has(event.event_ticker) ? 'Hide Markets' : 'Show Markets'}
+                    View Details
                   </button>
                 </div>
               </div>
-
-              {/* Markets Section */}
-              {expandedEvents.has(event.event_ticker) && (
-                <div className="border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/50">
-                  {event.isLoadingMarkets ? (
-                    <div className="p-6 text-center">
-                      <Loader2 className="w-6 h-6 text-primary mx-auto animate-spin mb-2" />
-                      <p className="text-sm text-slate-600 dark:text-slate-400">Loading market data...</p>
-                    </div>
-                  ) : event.marketsError ? (
-                    <div className="p-6 text-center">
-                      <AlertTriangle className="w-6 h-6 text-amber-500 mx-auto mb-2" />
-                      <p className="text-sm text-slate-600 dark:text-slate-400">{event.marketsError}</p>
-                    </div>
-                  ) : event.markets && event.markets.length > 0 ? (
-                    <div className="p-6">
-                      <h4 className="text-sm font-semibold text-slate-900 dark:text-white mb-4">
-                        Active Markets ({event.markets.length})
-                      </h4>
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        {event.markets.map((market) => (
-                          <div
-                            key={market.ticker}
-                            className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4"
-                          >
-                            {/* Market Header */}
-                            <div className="flex items-start justify-between mb-3">
-                              <div className="flex-1">
-                                <h5 className="font-medium text-slate-900 dark:text-white mb-1">
-                                  {market.yes_sub_title || market.title || 'Market'}
-                                </h5>
-                                {market.custom_strike && (
-                                  <div className="text-xs text-slate-600 dark:text-slate-400">
-                                    {Object.entries(market.custom_strike).map(([key, value]) => (
-                                      <span key={key}>{key}: {value}</span>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                              <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                market.status === 'active' 
-                                  ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
-                                  : 'bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300'
-                              }`}>
-                                {market.status}
-                              </span>
-                            </div>
-
-                            {/* Price Information */}
-                            <div className="grid grid-cols-2 gap-4 mb-3">
-                              <div className="text-center">
-                                <div className="text-xs text-slate-600 dark:text-slate-400 mb-1">YES</div>
-                                <div className="text-lg font-bold text-green-600 dark:text-green-400">
-                                  {formatPrice(market.last_price)}
-                                </div>
-                                <div className="text-xs text-slate-500 dark:text-slate-400">
-                                  Bid: {formatPrice(market.yes_bid)} | Ask: {formatPrice(market.yes_ask)}
-                                </div>
-                              </div>
-                              <div className="text-center">
-                                <div className="text-xs text-slate-600 dark:text-slate-400 mb-1">NO</div>
-                                <div className="text-lg font-bold text-red-600 dark:text-red-400">
-                                  {formatPrice(100 - market.last_price)}
-                                </div>
-                                <div className="text-xs text-slate-500 dark:text-slate-400">
-                                  Bid: {formatPrice(market.no_bid)} | Ask: {formatPrice(market.no_ask)}
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Market Stats */}
-                            <div className="grid grid-cols-3 gap-3 text-xs">
-                              <div className="text-center">
-                                <div className="flex items-center justify-center gap-1 text-slate-600 dark:text-slate-400 mb-1">
-                                  <BarChart3 className="h-3 w-3" />
-                                  <span>Volume</span>
-                                </div>
-                                <div className="font-medium text-slate-900 dark:text-white">
-                                  {formatVolume(market.volume)}
-                                </div>
-                              </div>
-                              <div className="text-center">
-                                <div className="flex items-center justify-center gap-1 text-slate-600 dark:text-slate-400 mb-1">
-                                  <Users className="h-3 w-3" />
-                                  <span>Open Interest</span>
-                                </div>
-                                <div className="font-medium text-slate-900 dark:text-white">
-                                  {formatVolume(market.open_interest)}
-                                </div>
-                              </div>
-                              <div className="text-center">
-                                <div className="flex items-center justify-center gap-1 text-slate-600 dark:text-slate-400 mb-1">
-                                  <DollarSign className="h-3 w-3" />
-                                  <span>Liquidity</span>
-                                </div>
-                                <div className="font-medium text-slate-900 dark:text-white">
-                                  {formatVolume(market.liquidity)}
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Market Dates */}
-                            <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-400">
-                              <div className="flex items-center gap-1 mb-1">
-                                <Clock className="h-3 w-3" />
-                                <span>Closes: {new Date(market.close_time).toLocaleDateString()}</span>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="p-6 text-center">
-                      <p className="text-sm text-slate-600 dark:text-slate-400">No active markets found for this event.</p>
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           ))}
         </div>
