@@ -11,22 +11,17 @@ interface BondItem {
   maturityDate: string;
 }
 
-type InputData = {
-    symbol: string;
-    yield: string;
-};
-
 type OutputData = {
     time: number;
     value: number;
 };
 
-function convertYieldData(data: InputData[]): OutputData[] {
+function convertYieldData(data: BondItem[]): OutputData[] {
     return data.map(item => {
-        // Extract the numeric part and the unit (M or Y) from the symbol
-        const symbolMatch = item.symbol.match(/US(\d+)([MY])/);
+        // Extract the numeric part and the unit (M or Y) from the shortName
+        const symbolMatch = item.shortName.match(/US(\d+)([MY])/);
         if (!symbolMatch) {
-            console.warn(`Could not parse symbol: ${item.symbol}. Skipping this item.`);
+            console.warn(`Could not parse symbol: ${item.shortName}. Skipping this item.`);
             return null; // Or throw an error, depending on desired error handling
         }
 
@@ -39,12 +34,12 @@ function convertYieldData(data: InputData[]): OutputData[] {
         } else if (unit === 'Y') {
             months = value * 12;
         } else {
-            console.warn(`Unknown unit in symbol: ${item.symbol}. Skipping this item.`);
+            console.warn(`Unknown unit in symbol: ${item.shortName}. Skipping this item.`);
             return null;
         }
 
         // Clean and convert the yield string to a number
-        const yieldValue = parseFloat(item.yield.replace('%', ''));
+        const yieldValue = parseFloat(item.last.replace('%', ''));
 
         return {
             time: months,
@@ -67,7 +62,7 @@ export default function BondView() {
   const [chartData, setChartData] = useState<Record<string, { time: number; value: number }[]>>({});  
   const yieldCurveChart = useRef<HTMLDivElement | null>(null);
   const [yieldChartLoaded, setYieldChartLoaded] = useState(false);
-  const [yieldChartData, setYieldChartData] = useState<Record<string, { time: number; value: number }[]>>({});
+  const [yieldChartData, setYieldChartData] = useState<OutputData[]>([]);
 
   useEffect(() => {
     const storedDarkMode = localStorage.getItem('darkMode');
