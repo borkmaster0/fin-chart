@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createChart, ISeriesApi, CandlestickSeries, ColorType, CrosshairMode } from 'lightweight-charts';
 import { evaluate } from 'mathjs';
 import { fetchChartData } from '../utils/api';
-import { Calculator, Loader2 } from 'lucide-react';
+import { Calculator, Loader2, Maximize2, Minimize2, X } from 'lucide-react';
 import TradingViewWidget from './TradingViewWidget';
 
 // === Types ===
@@ -315,6 +315,7 @@ const ChartExpressionApp: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [precision, setPrecision] = useState(2);
   const [chartData, setChartData] = useState<CandlestickData[]>([]);
+  const [isMaximized, setIsMaximized] = useState(false);
 
   const onEvaluate = async () => {
     setLoading(true);
@@ -358,110 +359,189 @@ const ChartExpressionApp: React.FC = () => {
     );
   };
 
+  const toggleMaximize = () => {
+    setIsMaximized(!isMaximized);
+  };
+
+  // Handle escape key to exit fullscreen
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isMaximized) {
+        setIsMaximized(false);
+      }
+    };
+
+    if (isMaximized) {
+      document.addEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isMaximized]);
+
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
-      <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-        <Calculator className="w-6 h-6 text-blue-500" />
-        Advanced Trading Analysis
-      </h2>
+    <>
+      <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+        <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+          <Calculator className="w-6 h-6 text-blue-500" />
+          Advanced Trading Analysis
+        </h2>
 
-      {/* TradingView Widget Section */}
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg overflow-hidden">
-        <div className="p-4 border-b border-slate-200 dark:border-slate-700">
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-            TradingView Chart
+        {/* TradingView Widget Section */}
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg overflow-hidden">
+          <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                TradingView Chart
+              </h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                Professional charting with advanced technical analysis tools
+              </p>
+            </div>
+            <button
+              onClick={toggleMaximize}
+              className="flex items-center gap-2 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+              title="Maximize chart"
+            >
+              <Maximize2 size={16} />
+              <span className="text-sm font-medium">Maximize</span>
+            </button>
+          </div>
+          <div className="h-[600px] p-0">
+            <TradingViewWidget />
+          </div>
+        </div>
+
+        {/* Expression Calculator Section */}
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+            Equity Expression Calculator
           </h3>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-            Professional charting with advanced technical analysis tools
-          </p>
-        </div>
-        <div className="h-[600px] p-0">
-          <TradingViewWidget />
-        </div>
-      </div>
+          
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4 mb-6">
+            <h4 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">
+              How to Use
+            </h4>
+            <p className="text-sm text-blue-800 dark:text-blue-200">
+              Type in the symbol in brackets, e.g. [SPY]. Some indicies don't work, like ^VIX. An example would be [SPY]/[QQQ].
+            </p>
+          </div>
 
-      {/* Expression Calculator Section */}
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6">
-        <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-          Equity Expression Calculator
-        </h3>
-        
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4 mb-6">
-          <h4 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">
-            How to Use
-          </h4>
-          <p className="text-sm text-blue-800 dark:text-blue-200">
-            Type in the symbol in brackets, e.g. [SPY]. Some indicies don't work, like ^VIX. An example would be [SPY]/[QQQ].
-          </p>
-        </div>
+          <div className="flex flex-col md:flex-row items-center gap-4 mb-6">
+            <input
+              value={expression}
+              onChange={(e) => setExpression(e.target.value)}
+              placeholder="Enter expression, e.g. ([AAPL] + [QQQ]) / 2"
+              className="w-full md:w-[400px] px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition dark:text-black"
+            />
+            <button
+              onClick={onEvaluate}
+              disabled={loading}
+              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition disabled:opacity-50"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="animate-spin mr-2 w-4 h-4" />
+                  Computing...
+                </>
+              ) : (
+                'Evaluate'
+              )}
+            </button>
+            <select
+              value={precision}
+              onChange={(e) => setPrecision(Number(e.target.value))}
+              className="text-sm border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 bg-white dark:bg-slate-800"
+            >
+              {Array.from({ length: 10 }, (_, i) => i).map((p) => (
+                <option key={p} value={p}>
+                  {p === 0 ? 'No decimals' : `${p} decimal${p > 1 ? 's' : ''}`}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        <div className="flex flex-col md:flex-row items-center gap-4 mb-6">
-          <input
-            value={expression}
-            onChange={(e) => setExpression(e.target.value)}
-            placeholder="Enter expression, e.g. ([AAPL] + [QQQ]) / 2"
-            className="w-full md:w-[400px] px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition dark:text-black"
-          />
-          <button
-            onClick={onEvaluate}
-            disabled={loading}
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition disabled:opacity-50"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="animate-spin mr-2 w-4 h-4" />
-                Computing...
-              </>
-            ) : (
-              'Evaluate'
-            )}
-          </button>
-          <select
-            value={precision}
-            onChange={(e) => setPrecision(Number(e.target.value))}
-            className="text-sm border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 bg-white dark:bg-slate-800"
-          >
-            {Array.from({ length: 10 }, (_, i) => i).map((p) => (
-              <option key={p} value={p}>
-                {p === 0 ? 'No decimals' : `${p} decimal${p > 1 ? 's' : ''}`}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {(Object.keys(symbolsData).length > 0 || expressionData.length > 0) && (
-          <div className="mb-4 flex flex-wrap gap-4">
-            {Object.keys(symbolsData).map((sym) => (
-              <label key={sym} className="inline-flex items-center space-x-2">
+          {(Object.keys(symbolsData).length > 0 || expressionData.length > 0) && (
+            <div className="mb-4 flex flex-wrap gap-4">
+              {Object.keys(symbolsData).map((sym) => (
+                <label key={sym} className="inline-flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={selectedPlots.includes(sym)}
+                    onChange={() => togglePlot(sym)}
+                  />
+                  <span>{sym}</span>
+                </label>
+              ))}
+              <label className="inline-flex items-center space-x-2">
                 <input
                   type="checkbox"
-                  checked={selectedPlots.includes(sym)}
-                  onChange={() => togglePlot(sym)}
+                  checked={selectedPlots.includes('expression')}
+                  onChange={() => togglePlot('expression')}
                 />
-                <span>{sym}</span>
+                <span>Expression</span>
               </label>
-            ))}
-            <label className="inline-flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={selectedPlots.includes('expression')}
-                onChange={() => togglePlot('expression')}
-              />
-              <span>Expression</span>
-            </label>
-          </div>
-        )}
+            </div>
+          )}
 
-        <div className="relative w-full h-[600px] md:h-[500px] rounded-lg border border-gray-200 shadow-md overflow-hidden">
-          <CandlestickChart
-            seriesData={{ ...symbolsData, expression: expressionData }}
-            selectedPlots={selectedPlots}
-            precision={precision}
-            expressionTitle={expression}
-          />
+          <div className="relative w-full h-[600px] md:h-[500px] rounded-lg border border-gray-200 shadow-md overflow-hidden">
+            <CandlestickChart
+              seriesData={{ ...symbolsData, expression: expressionData }}
+              selectedPlots={selectedPlots}
+              precision={precision}
+              expressionTitle={expression}
+            />
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* Maximized TradingView Modal */}
+      {isMaximized && (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-95 flex flex-col">
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 bg-slate-900 text-white border-b border-slate-700">
+            <div className="flex items-center gap-3">
+              <Calculator className="w-6 h-6 text-blue-400" />
+              <h2 className="text-xl font-semibold">TradingView Chart - Maximized</h2>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={toggleMaximize}
+                className="flex items-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
+                title="Minimize chart"
+              >
+                <Minimize2 size={16} />
+                <span className="text-sm font-medium">Minimize</span>
+              </button>
+              <button
+                onClick={toggleMaximize}
+                className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+                title="Close (ESC)"
+              >
+                <X size={20} />
+              </button>
+            </div>
+          </div>
+          
+          {/* Chart Container */}
+          <div className="flex-1 bg-slate-900">
+            <TradingViewWidget />
+          </div>
+          
+          {/* Footer */}
+          <div className="p-2 bg-slate-900 text-center">
+            <p className="text-sm text-slate-400">
+              Press <kbd className="px-2 py-1 bg-slate-700 rounded text-xs">ESC</kbd> to exit fullscreen
+            </p>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
