@@ -505,10 +505,6 @@ const ChartExpressionApp: React.FC = () => {
         <div className="fixed inset-0 z-50 bg-black bg-opacity-95 flex flex-col">
           {/* Header */}
           <div className="flex items-center justify-between p-4 bg-slate-900 text-white border-b border-slate-700">
-            <div className="flex items-center gap-3">
-              <Calculator className="w-6 h-6 text-blue-400" />
-              <h2 className="text-xl font-semibold">TradingView Chart - Maximized</h2>
-            </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={toggleMaximize}
