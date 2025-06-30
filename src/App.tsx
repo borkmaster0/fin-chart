@@ -311,7 +311,8 @@ function App() {
                   </>
                 )}
               </button>
-              <img src={bolt_black} alt="Powered by bolt.new" width={100} height={100}/>
+              <a href="https://bolt.new/">
+              <img src={bolt_black} alt="Powered by bolt.new" width={100} height={100}/></a>
             </div>
           </div>
         </div>
