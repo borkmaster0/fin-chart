@@ -41,7 +41,10 @@ function TradingViewTickerTape() {
           "showSymbolLogo": true,
           "displayMode": "compact"
         }`;
-      container.current.appendChild(script);
+      if (!document.querySelector(`#tradingview-ticker-script`)) {
+        script.id = "tradingview-ticker-script";
+        container.current.appendChild(script);
+      }
     },
     []
   );

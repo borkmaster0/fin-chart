@@ -27,7 +27,10 @@ function TradingViewETFHeatmap() {
           "width": "100%",
           "height": "100%"
         }`;
-      container.current.appendChild(script);
+      if (!document.querySelector(`#tradingview-etfheatmap-script`)) {
+        script.id = "tradingview-etfheatmap-script";
+        container.current.appendChild(script);
+      }
     },
     []
   );

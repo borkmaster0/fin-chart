@@ -52,7 +52,10 @@ function TradingViewForexHeatmap() {
           "width": "100%",
           "height": "100%"
         }`;
-      container.current.appendChild(script);
+      if (!document.querySelector(`#tradingview-forexheatmap-script`)) {
+        script.id = "tradingview-forexheatmap-script";
+        container.current.appendChild(script);
+      }
     },
     []
   );

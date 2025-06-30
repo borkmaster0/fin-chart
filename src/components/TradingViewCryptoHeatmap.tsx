@@ -26,7 +26,10 @@ function TradingViewCryptoHeatmap() {
           "width": "100%",
           "height": "100%"
         }`;
-      container.current.appendChild(script);
+      if (!document.querySelector(`#tradingview-cryptoheatmap-script`)) {
+        script.id = "tradingview-cryptoheatmap-script";
+        container.current.appendChild(script);
+      }
     },
     []
   );

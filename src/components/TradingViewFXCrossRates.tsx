@@ -1,7 +1,7 @@
 // TradingViewWidget.jsx
 import React, { useEffect, useRef, memo } from 'react';
 
-function TradingViewFXCrossRates() {
+function TradingViewWidget() {
   const container = useRef();
 
   useEffect(
@@ -23,36 +23,39 @@ function TradingViewFXCrossRates() {
             "CHF",
             "AUD",
             "CAD",
-            "NZD",
             "CNY",
+            "SEK",
+            "NZD",
             "TRY",
             "NOK",
-            "SEK",
-            "DKK",
             "ZAR",
             "SGD",
+            "DKK",
             "HKD",
+            "PLN",
             "THB",
+            "IDR",
             "MXN",
             "KRW",
-            "IDR",
-            "PLN",
+            "AED",
+            "ISK",
             "KWD",
             "RUB",
-            "ARS",
-            "COP",
-            "UYU",
-            "PEN",
-            "CLP",
-            "AED",
             "ILS",
-            "ISK"
+            "ARS",
+            "CLP",
+            "PEN",
+            "UYU",
+            "COP"
           ],
           "backgroundColor": "#0F0F0F",
-          "width": 550,
-          "height": 400
+          "width": "100%",
+          "height": "100%"
         }`;
-      container.current.appendChild(script);
+      if (!document.querySelector(`#tradingview-fxcrossrates-script`)) {
+        script.id = "tradingview-fxcrossrates-script";
+        container.current.appendChild(script);
+      }
     },
     []
   );
@@ -64,4 +67,4 @@ function TradingViewFXCrossRates() {
   );
 }
 
-export default memo(TradingViewFXCrossRates);
+export default memo(TradingViewWidget);

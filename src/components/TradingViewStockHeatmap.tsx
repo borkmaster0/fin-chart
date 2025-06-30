@@ -28,7 +28,10 @@ function TradingViewStockHeatmap() {
           "width": "100%",
           "height": "100%"
         }`;
-      container.current.appendChild(script);
+      if (!document.querySelector(`#tradingview-stockheatmap-script`)) {
+        script.id = "tradingview-stockheatmap-script";
+        container.current.appendChild(script);
+      }
     },
     []
   );

@@ -4,6 +4,14 @@ import { evaluate } from 'mathjs';
 import { fetchChartData } from '../utils/api';
 import { Calculator, Loader2, Maximize2, Minimize2, X } from 'lucide-react';
 import TradingViewWidget from './TradingViewWidget';
+import TradingViewTopNews from './TradingViewTopNews';
+import TradingViewTickerTape from './TradingViewTickerTape';
+import TradingViewStockHeatmap from './TradingViewStockHeatmap';
+import TradingViewFXCrossRates from './TradingViewFXCrossRates';
+import TradingViewForexHeatmap from './TradingViewForexHeatmap';
+import TradingViewETFHeatmap from './TradingViewETFHeatmap';
+import TradingViewCryptoHeatmap from './TradingViewCryptoHeatmap';
+import TradingViewEconomicCalendar from './TradingViewEconomicCalendar';
 
 // === Types ===
 interface ChartData {
@@ -316,6 +324,8 @@ const ChartExpressionApp: React.FC = () => {
   const [precision, setPrecision] = useState(2);
   const [chartData, setChartData] = useState<CandlestickData[]>([]);
   const [isMaximized, setIsMaximized] = useState(false);
+  const [activeTab, setActiveTab] = useState<'Charts' | 'News' | 'Heatmaps' | 'Forex'>('Charts');
+  const [activeHeatmap, setActiveHeatmap] = useState<'Stock' | 'ETF' | 'Forex' | 'Crypto'>('Stock');
 
   const onEvaluate = async () => {
     setLoading(true);
@@ -504,30 +514,91 @@ const ChartExpressionApp: React.FC = () => {
       {isMaximized && (
         <div className="fixed inset-0 z-50 bg-black bg-opacity-95 flex flex-col">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 bg-slate-900 text-white border-b border-slate-700">
+          <div className="flex items-center justify-between bg-slate-900 text-white">
             <div className="flex items-left gap-2">
-              <button
-                onClick={toggleMaximize}
-                className="flex items-left gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
-                title="Minimize chart"
-              >
-                <Minimize2 size={16} />
-                <span className="text-sm font-medium">Minimize</span>
-              </button>
-              <button
+              {/* Tabs */}
+              <div className="flex space-x-4 mb-6 border-b border-gray-300 dark:border-gray-700">
+                {['Charts', 'News', 'Heatmaps', 'Forex'].map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab as any)}
+                    className={`px-1 py-1 font-medium border-b-2 transition-colors ${
+                      activeTab === tab
+                        ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                        : 'border-transparent hover:text-blue-500 dark:hover:text-blue-300'
+                    }`}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <TradingViewTickerTape />
+            <button
                 onClick={toggleMaximize}
                 className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
                 title="Close (ESC)"
               >
                 <X size={20} />
-              </button>
+            </button>
+          </div>
+
+          {activeTab === 'Charts' && (
+          <div className={`flex-1 bg-slate-900 ${activeTab === 'Charts' ? '' : 'hidden'}`}>
+            {/* Flexbox container for chart (left) and news (right) */}
+            <div className="flex h-full">
+              <div className="flex-1">
+                {/* TradingView Widget (Chart on the left) */}
+                <TradingViewWidget />
+              </div>
+              <div className="w-75 bg-slate-800 border-l border-slate-700">
+                {/* TradingView Top News (News on the right) */}
+                <div className="h-[50%] bg-slate-800 border-1 border-slate-700">
+                  <TradingViewEconomicCalendar />
+                </div>
+                <div className="h-[50%] bg-slate-800 border-1 border-slate-700">
+                  <TradingViewTopNews />
+                </div>
+              </div>
             </div>
           </div>
-          
-          {/* Chart Container */}
-          <div className="flex-1 bg-slate-900">
-            <TradingViewWidget />
+          )}
+          {activeTab === 'News' && (
+          <div className={`flex-1 bg-slate-900 ${activeTab === 'News' ? '' : 'hidden'}`}>
+            <TradingViewTopNews />
           </div>
+          )}
+          {activeTab === 'Heatmaps' && (
+            <div className="flex-1 bg-slate-900">
+              {/* Nested Heatmap Selector */}
+              <div className="flex space-x-4">
+                {['Stock', 'ETF', 'Forex', 'Crypto'].map((heatmapType) => (
+                  <button
+                    key={heatmapType}
+                    onClick={() => setActiveHeatmap(heatmapType)}
+                    className={`px-1 py-1 font-medium border-b-2 transition-colors ${
+                      activeHeatmap === heatmapType
+                        ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                        : 'border-transparent hover:text-blue-500 dark:hover:text-blue-300'
+                    }`}
+                  >
+                    {heatmapType}
+                  </button>
+                ))}
+              </div>
+
+              {/* Render the selected heatmap */}
+              {activeHeatmap === 'Stock' && <TradingViewStockHeatmap />}
+              {activeHeatmap === 'Forex' && <TradingViewForexHeatmap />}
+              {activeHeatmap === 'ETF' && <TradingViewETFHeatmap />}
+              {activeHeatmap === 'Crypto' && <TradingViewCryptoHeatmap />}
+            </div>
+          )}
+          {activeTab === 'Forex' && (
+          <div className="flex-1 bg-slate-900">
+            <TradingViewFXCrossRates />
+          </div>
+          )}
         </div>
       )}
     </>
