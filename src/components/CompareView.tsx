@@ -508,7 +508,7 @@ const ChartExpressionApp: React.FC = () => {
             <div className="flex items-left gap-2">
               <button
                 onClick={toggleMaximize}
-                className="flex items-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
+                className="flex items-left gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
                 title="Minimize chart"
               >
                 <Minimize2 size={16} />
