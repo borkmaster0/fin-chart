@@ -9,8 +9,6 @@ interface BacktestConfig {
   startDate: string;
   endDate: string;
   initialValue: number;
-  cashflow: number;
-  cashflowFrequency: 'none' | 'monthly' | 'quarterly' | 'yearly';
   reinvestDividends: boolean; // New option for total return
 }
 
@@ -87,8 +85,6 @@ const BacktestingView: React.FC = () => {
     startDate: '', // Blank by default
     endDate: '',   // Blank by default
     initialValue: 100000,
-    cashflow: 0,
-    cashflowFrequency: 'yearly',
     reinvestDividends: true // Default to true for total return
   });
 
@@ -703,31 +699,6 @@ const BacktestingView: React.FC = () => {
                     />
                   </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Cashflow</label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500">$</span>
-                    <input
-                      type="number"
-                      value={config.cashflow}
-                      onChange={(e) => setConfig({ ...config, cashflow: Number(e.target.value) })}
-                      className="input w-full pl-8"
-                    />
-                  </div>
-                </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-1">Cashflow Frequency</label>
-                <select
-                  value={config.cashflowFrequency}
-                  onChange={(e) => setConfig({ ...config, cashflowFrequency: e.target.value as any })}
-                  className="input w-full"
-                >
-                  <option value="monthly">Monthly</option>
-                  <option value="quarterly">Quarterly</option>
-                  <option value="yearly">Yearly</option>
-                </select>
               </div>
               
               <div className="space-y-3">
