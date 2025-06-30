@@ -505,7 +505,7 @@ const ChartExpressionApp: React.FC = () => {
         <div className="fixed inset-0 z-50 bg-black bg-opacity-95 flex flex-col">
           {/* Header */}
           <div className="flex items-center justify-between p-4 bg-slate-900 text-white border-b border-slate-700">
-            <div className="flex items-center gap-2">
+            <div className="flex items-left gap-2">
               <button
                 onClick={toggleMaximize}
                 className="flex items-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
@@ -527,13 +527,6 @@ const ChartExpressionApp: React.FC = () => {
           {/* Chart Container */}
           <div className="flex-1 bg-slate-900">
             <TradingViewWidget />
-          </div>
-          
-          {/* Footer */}
-          <div className="p-2 bg-slate-900 text-center">
-            <p className="text-sm text-slate-400">
-              Press <kbd className="px-2 py-1 bg-slate-700 rounded text-xs">ESC</kbd> to exit fullscreen
-            </p>
           </div>
         </div>
       )}
