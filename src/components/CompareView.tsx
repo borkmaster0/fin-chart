@@ -3,6 +3,7 @@ import { createChart, ISeriesApi, CandlestickSeries, ColorType, CrosshairMode } 
 import { evaluate } from 'mathjs';
 import { fetchChartData } from '../utils/api';
 import { Calculator, Loader2 } from 'lucide-react';
+import TradingViewWidget from './TradingViewWidget';
 
 // === Types ===
 interface ChartData {
@@ -358,85 +359,107 @@ const ChartExpressionApp: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
       <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
         <Calculator className="w-6 h-6 text-blue-500" />
-        Equity Expression Chart
+        Advanced Trading Analysis
       </h2>
 
-      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
-        <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">
-          How to Use
-        </h3>
-        <p className="text-sm text-blue-800 dark:text-blue-200">
-          Type in the symbol in brackets, e.g. [SPY]. Some indicies don't work, like ^VIX. An example would be [SPY]/[QQQ].
-        </p>
-      </div>
-      <div className="h-[25px]"></div>
-      <div className="flex flex-col md:flex-row items-center gap-4 mb-6">
-        <input
-          value={expression}
-          onChange={(e) => setExpression(e.target.value)}
-          placeholder="Enter expression, e.g. ([AAPL] + [QQQ]) / 2"
-          className="w-full md:w-[400px] px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition dark:text-black"
-        />
-        <button
-          onClick={onEvaluate}
-          disabled={loading}
-          className="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition disabled:opacity-50"
-        >
-          {loading ? (
-            <>
-              <Loader2 className="animate-spin mr-2 w-4 h-4" />
-              Computing...
-            </>
-          ) : (
-            'Evaluate'
-          )}
-        </button>
-        <select
-          value={precision}
-          onChange={(e) => setPrecision(Number(e.target.value))}
-          className="text-sm border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 bg-white dark:bg-slate-800"
-        >
-          {Array.from({ length: 10 }, (_, i) => i).map((p) => (
-            <option key={p} value={p}>
-              {p === 0 ? 'No decimals' : `${p} decimal${p > 1 ? 's' : ''}`}
-            </option>
-          ))}
-        </select>
+      {/* TradingView Widget Section */}
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg overflow-hidden">
+        <div className="p-4 border-b border-slate-200 dark:border-slate-700">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+            TradingView Chart
+          </h3>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+            Professional charting with advanced technical analysis tools
+          </p>
+        </div>
+        <div className="h-[500px] p-4">
+          <TradingViewWidget />
+        </div>
       </div>
 
-      {(Object.keys(symbolsData).length > 0 || expressionData.length > 0) && (
-        <div className="mb-4 flex flex-wrap gap-4">
-          {Object.keys(symbolsData).map((sym) => (
-            <label key={sym} className="inline-flex items-center space-x-2">
+      {/* Expression Calculator Section */}
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6">
+        <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+          Equity Expression Calculator
+        </h3>
+        
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4 mb-6">
+          <h4 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">
+            How to Use
+          </h4>
+          <p className="text-sm text-blue-800 dark:text-blue-200">
+            Type in the symbol in brackets, e.g. [SPY]. Some indicies don't work, like ^VIX. An example would be [SPY]/[QQQ].
+          </p>
+        </div>
+
+        <div className="flex flex-col md:flex-row items-center gap-4 mb-6">
+          <input
+            value={expression}
+            onChange={(e) => setExpression(e.target.value)}
+            placeholder="Enter expression, e.g. ([AAPL] + [QQQ]) / 2"
+            className="w-full md:w-[400px] px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition dark:text-black"
+          />
+          <button
+            onClick={onEvaluate}
+            disabled={loading}
+            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition disabled:opacity-50"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="animate-spin mr-2 w-4 h-4" />
+                Computing...
+              </>
+            ) : (
+              'Evaluate'
+            )}
+          </button>
+          <select
+            value={precision}
+            onChange={(e) => setPrecision(Number(e.target.value))}
+            className="text-sm border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 bg-white dark:bg-slate-800"
+          >
+            {Array.from({ length: 10 }, (_, i) => i).map((p) => (
+              <option key={p} value={p}>
+                {p === 0 ? 'No decimals' : `${p} decimal${p > 1 ? 's' : ''}`}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {(Object.keys(symbolsData).length > 0 || expressionData.length > 0) && (
+          <div className="mb-4 flex flex-wrap gap-4">
+            {Object.keys(symbolsData).map((sym) => (
+              <label key={sym} className="inline-flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={selectedPlots.includes(sym)}
+                  onChange={() => togglePlot(sym)}
+                />
+                <span>{sym}</span>
+              </label>
+            ))}
+            <label className="inline-flex items-center space-x-2">
               <input
                 type="checkbox"
-                checked={selectedPlots.includes(sym)}
-                onChange={() => togglePlot(sym)}
+                checked={selectedPlots.includes('expression')}
+                onChange={() => togglePlot('expression')}
               />
-              <span>{sym}</span>
+              <span>Expression</span>
             </label>
-          ))}
-          <label className="inline-flex items-center space-x-2">
-            <input
-              type="checkbox"
-              checked={selectedPlots.includes('expression')}
-              onChange={() => togglePlot('expression')}
-            />
-            <span>Expression</span>
-          </label>
-        </div>
-      )}
+          </div>
+        )}
 
-      <div className="relative w-full h-[600px] md:h-[500px] rounded-lg border border-gray-200 shadow-md overflow-hidden">
-        <CandlestickChart
-          seriesData={{ ...symbolsData, expression: expressionData }}
-          selectedPlots={selectedPlots}
-          precision={precision}
-          expressionTitle={expression}
-        />
+        <div className="relative w-full h-[600px] md:h-[500px] rounded-lg border border-gray-200 shadow-md overflow-hidden">
+          <CandlestickChart
+            seriesData={{ ...symbolsData, expression: expressionData }}
+            selectedPlots={selectedPlots}
+            precision={precision}
+            expressionTitle={expression}
+          />
+        </div>
       </div>
     </div>
   );
