@@ -428,7 +428,7 @@ function App() {
       
       <footer className="bg-white dark:bg-slate-800 shadow-inner mt-auto py-4">
         <div className="container mx-auto px-4 text-center text-slate-600 dark:text-slate-400 text-sm">
-          <p>© {new Date().getFullYear()} FinChart. Chart data provided by Yahoo Finance, Bonds provided by Barrons & CNBC, Prediction provided by Kalshi.</p>
+          <p>© {new Date().getFullYear()} FinChart. Chart data provided by Yahoo Finance, Bonds provided by Barrons & CNBC, Prediction provided by Kalshi. Widgets by TradingView.</p>
         </div>
       </footer>
 
