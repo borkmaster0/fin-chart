@@ -311,6 +311,7 @@ function App() {
                   </>
                 )}
               </button>
+              <img src={bolt_black} alt="Powered by bolt.new" width={100} height={100}/>
             </div>
           </div>
         </div>
@@ -433,7 +434,6 @@ function App() {
           <p>© {new Date().getFullYear()} FinChart. Chart data provided by Yahoo Finance, Bonds provided by Barrons & CNBC, Prediction provided by Kalshi. Widgets by TradingView.</p>
           <img src={bolt_black} alt="Powered by bolt.new" width={100} height={100}/>
         </div>
-        
       </footer>
 
       {showPortfolioDialog && (
