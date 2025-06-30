@@ -432,7 +432,7 @@ function App() {
         <div className="container mx-auto px-4 text-center text-slate-600 dark:text-slate-400 text-sm">
           <p>© {new Date().getFullYear()} FinChart. Chart data provided by Yahoo Finance, Bonds provided by Barrons & CNBC, Prediction provided by Kalshi. Widgets by TradingView.</p>
         </div>
-        <img src={bolt_black} alt="Powered by bolt.new" width={250} height={250}/>
+        <img src={bolt_black} alt="Powered by bolt.new" width={10} height={10}/>
       </footer>
 
       {showPortfolioDialog && (
