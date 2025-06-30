@@ -375,7 +375,7 @@ const ChartExpressionApp: React.FC = () => {
             Professional charting with advanced technical analysis tools
           </p>
         </div>
-        <div className="h-[500px] p-4">
+        <div className="h-auto p-4">
           <TradingViewWidget />
         </div>
       </div>
