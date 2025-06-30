@@ -14,6 +14,8 @@ import PredictionView from './components/PredictionView';
 import { fetchChartData } from './utils/api';
 import { ChartData } from './types';
 import { loadSettings, saveCurrentSymbol, loadCurrentSymbol } from './utils/db';
+import bolt_black from './images/bolt_black.png';
+import bolt_white from './images/bolt_white.png';
 
 function App() {
   const [darkMode, setDarkMode] = useState(() => {
@@ -430,6 +432,7 @@ function App() {
         <div className="container mx-auto px-4 text-center text-slate-600 dark:text-slate-400 text-sm">
           <p>© {new Date().getFullYear()} FinChart. Chart data provided by Yahoo Finance, Bonds provided by Barrons & CNBC, Prediction provided by Kalshi. Widgets by TradingView.</p>
         </div>
+        <img src={bolt_black} alt="Powered by bolt.new" />
       </footer>
 
       {showPortfolioDialog && (
