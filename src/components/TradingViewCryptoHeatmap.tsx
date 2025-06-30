@@ -1,7 +1,7 @@
 // TradingViewWidget.jsx
 import React, { useEffect, useRef, memo } from 'react';
 
-function TradingViewWidget() {
+function TradingViewCryptoHeatmap() {
   const container = useRef();
 
   useEffect(
@@ -39,4 +39,4 @@ function TradingViewWidget() {
   );
 }
 
-export default memo(TradingViewWidget);
+export default memo(TradingViewCryptoHeatmap);
