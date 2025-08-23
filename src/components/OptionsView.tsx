@@ -34,6 +34,7 @@ interface OptionsByExpiry {
 
 const OptionsView: React.FC<OptionsViewProps> = ({ symbol }) => {
   const [optionsData, setOptionsData] = useState<OptionStraddleResponse | null>(null);
+  const [cachedSymbol, setCachedSymbol] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedExpiry, setSelectedExpiry] = useState<string>('');
@@ -143,7 +144,7 @@ const OptionsView: React.FC<OptionsViewProps> = ({ symbol }) => {
   };
 
   const loadOptionsData = async () => {
-    if (!symbol) return;
+    if (!symbol || (symbol === cachedSymbol && optionsData)) return;
     
     setLoading(true);
     setError(null);
@@ -151,6 +152,7 @@ const OptionsView: React.FC<OptionsViewProps> = ({ symbol }) => {
     try {
       const data = await fetchSymbolOptionsChain(symbol);
       setOptionsData(data);
+      setCachedSymbol(symbol);
       
       // Set default expiry to the first one (most recent)
       if (data.straddles.length > 0) {
@@ -173,7 +175,10 @@ const OptionsView: React.FC<OptionsViewProps> = ({ symbol }) => {
   };
 
   useEffect(() => {
-    loadOptionsData();
+    // Only load if we don't have data for this symbol
+    if (!optionsData || symbol !== cachedSymbol) {
+      loadOptionsData();
+    }
   }, [symbol]);
 
   const formatCurrency = (value: number): string => {
