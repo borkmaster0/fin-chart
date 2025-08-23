@@ -39,11 +39,62 @@ const OptionsView: React.FC<OptionsViewProps> = ({ symbol }) => {
   const [error, setError] = useState<string | null>(null);
   const [selectedExpiry, setSelectedExpiry] = useState<string>('');
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [showColumnSettings, setShowColumnSettings] = useState(false);
+  const [visibleColumns, setVisibleColumns] = useState({
+    last: true,
+    bid: true,
+    ask: true,
+    volume: true,
+    openInterest: true,
+    impliedVolatility: true,
+    delta: false,
+    gamma: false,
+    theta: false,
+    vega: false,
+    rho: false
+  });
 
   useEffect(() => {
     const storedDarkMode = localStorage.getItem('darkMode');
     setIsDarkMode(storedDarkMode === 'true');
   }, []);
+
+  const toggleColumn = (column: keyof typeof visibleColumns) => {
+    setVisibleColumns(prev => ({
+      ...prev,
+      [column]: !prev[column]
+    }));
+  };
+
+  const resetColumns = () => {
+    setVisibleColumns({
+      last: true,
+      bid: true,
+      ask: true,
+      volume: true,
+      openInterest: true,
+      impliedVolatility: true,
+      delta: false,
+      gamma: false,
+      theta: false,
+      vega: false,
+      rho: false
+    });
+  };
+
+  const columnLabels = {
+    last: 'Last',
+    bid: 'Bid',
+    ask: 'Ask',
+    volume: 'Vol',
+    openInterest: 'OI',
+    impliedVolatility: 'IV',
+    delta: 'Delta',
+    gamma: 'Gamma',
+    theta: 'Theta',
+    vega: 'Vega',
+    rho: 'Rho'
+  };
 
   const parseOptionContract = (contract: string): { expiry: string; strike: number; type: 'call' | 'put' } => {
     // Example: QQQ250825C00450000
@@ -267,6 +318,9 @@ const OptionsView: React.FC<OptionsViewProps> = ({ symbol }) => {
     );
   }
 
+  // Count visible columns for dynamic colspan
+  const visibleColumnCount = Object.values(visibleColumns).filter(Boolean).length;
+
   const organizedOptions = organizeOptionsByExpiry(optionsData.straddles);
   const expiries = Object.keys(organizedOptions).sort((a, b) => {
     const dateA = new Date(a);
@@ -302,6 +356,47 @@ const OptionsView: React.FC<OptionsViewProps> = ({ symbol }) => {
             <RefreshCw size={18} className={`text-slate-600 dark:text-slate-400 ${loading ? 'animate-spin' : ''}`} />
             <span className="text-sm font-medium">Refresh</span>
           </button>
+          <div className="relative">
+            <button
+              onClick={() => setShowColumnSettings(!showColumnSettings)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+            >
+              <Target size={18} className="text-slate-600 dark:text-slate-400" />
+              <span className="text-sm font-medium">Columns</span>
+            </button>
+            
+            {showColumnSettings && (
+              <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-10 p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-medium text-slate-900 dark:text-white">Table Columns</h4>
+                  <button
+                    onClick={resetColumns}
+                    className="text-xs text-primary hover:text-primary-dark"
+                  >
+                    Reset
+                  </button>
+                </div>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {Object.entries(columnLabels).map(([key, label]) => (
+                    <label key={key} className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={visibleColumns[key as keyof typeof visibleColumns]}
+                        onChange={() => toggleColumn(key as keyof typeof visibleColumns)}
+                        className="form-checkbox h-4 w-4 text-primary rounded border-slate-300 dark:border-slate-600"
+                      />
+                      <span className="text-slate-700 dark:text-slate-300">{label}</span>
+                    </label>
+                  ))}
+                </div>
+                <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Greeks are hidden by default. Enable them to see Delta, Gamma, Theta, Vega, and Rho values.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -342,29 +437,39 @@ const OptionsView: React.FC<OptionsViewProps> = ({ symbol }) => {
               <thead>
                 <tr className="border-b border-slate-200 dark:border-slate-700">
                   {/* Call Headers */}
-                  <th className="text-center p-3 font-semibold text-slate-900 dark:text-white" colSpan={6}>Call</th>
+                  <th className="text-center p-3 font-semibold text-slate-900 dark:text-white" colSpan={visibleColumnCount}>Call</th>
                   {/* Strike Header */}
                   <th className="text-center p-3 font-semibold text-slate-900 dark:text-white">Strike</th>
                   {/* Put Headers */}
-                  <th className="text-center p-3 font-semibold text-slate-900 dark:text-white" colSpan={6}>Put</th>
+                  <th className="text-center p-3 font-semibold text-slate-900 dark:text-white" colSpan={visibleColumnCount}>Put</th>
                 </tr>
                 <tr className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
                   {/* Call Sub-headers */}
-                  <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">Last</th>
-                  <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">Bid</th>
-                  <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">Ask</th>
-                  <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">Vol</th>
-                  <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">OI</th>
-                  <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">IV</th>
+                  {visibleColumns.last && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">Last</th>}
+                  {visibleColumns.bid && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">Bid</th>}
+                  {visibleColumns.ask && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">Ask</th>}
+                  {visibleColumns.volume && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">Vol</th>}
+                  {visibleColumns.openInterest && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">OI</th>}
+                  {visibleColumns.impliedVolatility && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">IV</th>}
+                  {visibleColumns.delta && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">Δ</th>}
+                  {visibleColumns.gamma && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">Γ</th>}
+                  {visibleColumns.theta && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">Θ</th>}
+                  {visibleColumns.vega && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">ν</th>}
+                  {visibleColumns.rho && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">ρ</th>}
                   {/* Strike */}
                   <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">Price</th>
                   {/* Put Sub-headers */}
-                  <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">IV</th>
-                  <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">OI</th>
-                  <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">Vol</th>
-                  <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">Ask</th>
-                  <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">Bid</th>
-                  <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">Last</th>
+                  {visibleColumns.rho && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">ρ</th>}
+                  {visibleColumns.vega && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">ν</th>}
+                  {visibleColumns.theta && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">Θ</th>}
+                  {visibleColumns.gamma && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">Γ</th>}
+                  {visibleColumns.delta && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">Δ</th>}
+                  {visibleColumns.impliedVolatility && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">IV</th>}
+                  {visibleColumns.openInterest && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">OI</th>}
+                  {visibleColumns.volume && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">Vol</th>}
+                  {visibleColumns.ask && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">Ask</th>}
+                  {visibleColumns.bid && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">Bid</th>}
+                  {visibleColumns.last && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">Last</th>}
                 </tr>
               </thead>
               <tbody>
@@ -381,12 +486,17 @@ const OptionsView: React.FC<OptionsViewProps> = ({ symbol }) => {
                       }`}
                     >
                       {/* Call Data */}
-                      <td className="text-center p-2 text-sm font-medium">{formatCurrency(call?.lastPrice || 0)}</td>
-                      <td className="text-center p-2 text-sm">{formatCurrency(call?.bid || 0)}</td>
-                      <td className="text-center p-2 text-sm">{formatCurrency(call?.ask || 0)}</td>
-                      <td className="text-center p-2 text-sm">{call?.volume || 0}</td>
-                      <td className="text-center p-2 text-sm">{call?.openInterest || 0}</td>
-                      <td className="text-center p-2 text-sm">{formatPercent(call?.impliedVolatility || 0)}</td>
+                      {visibleColumns.last && <td className="text-center p-2 text-sm font-medium">{formatCurrency(call?.lastPrice || 0)}</td>}
+                      {visibleColumns.bid && <td className="text-center p-2 text-sm">{formatCurrency(call?.bid || 0)}</td>}
+                      {visibleColumns.ask && <td className="text-center p-2 text-sm">{formatCurrency(call?.ask || 0)}</td>}
+                      {visibleColumns.volume && <td className="text-center p-2 text-sm">{call?.volume || 0}</td>}
+                      {visibleColumns.openInterest && <td className="text-center p-2 text-sm">{call?.openInterest || 0}</td>}
+                      {visibleColumns.impliedVolatility && <td className="text-center p-2 text-sm">{formatPercent(call?.impliedVolatility || 0)}</td>}
+                      {visibleColumns.delta && <td className="text-center p-2 text-sm">{formatGreek(call?.delta || 0)}</td>}
+                      {visibleColumns.gamma && <td className="text-center p-2 text-sm">{formatGreek(call?.gamma || 0)}</td>}
+                      {visibleColumns.theta && <td className="text-center p-2 text-sm">{formatGreek(call?.theta || 0)}</td>}
+                      {visibleColumns.vega && <td className="text-center p-2 text-sm">{formatGreek(call?.vega || 0)}</td>}
+                      {visibleColumns.rho && <td className="text-center p-2 text-sm">{formatGreek(call?.rho || 0)}</td>}
                       
                       {/* Strike */}
                       <td className={`text-center p-2 font-bold ${
@@ -398,12 +508,17 @@ const OptionsView: React.FC<OptionsViewProps> = ({ symbol }) => {
                       </td>
                       
                       {/* Put Data */}
-                      <td className="text-center p-2 text-sm">{formatPercent(put?.impliedVolatility || 0)}</td>
-                      <td className="text-center p-2 text-sm">{put?.openInterest || 0}</td>
-                      <td className="text-center p-2 text-sm">{put?.volume || 0}</td>
-                      <td className="text-center p-2 text-sm">{formatCurrency(put?.ask || 0)}</td>
-                      <td className="text-center p-2 text-sm">{formatCurrency(put?.bid || 0)}</td>
-                      <td className="text-center p-2 text-sm font-medium">{formatCurrency(put?.lastPrice || 0)}</td>
+                      {visibleColumns.rho && <td className="text-center p-2 text-sm">{formatGreek(put?.rho || 0)}</td>}
+                      {visibleColumns.vega && <td className="text-center p-2 text-sm">{formatGreek(put?.vega || 0)}</td>}
+                      {visibleColumns.theta && <td className="text-center p-2 text-sm">{formatGreek(put?.theta || 0)}</td>}
+                      {visibleColumns.gamma && <td className="text-center p-2 text-sm">{formatGreek(put?.gamma || 0)}</td>}
+                      {visibleColumns.delta && <td className="text-center p-2 text-sm">{formatGreek(put?.delta || 0)}</td>}
+                      {visibleColumns.impliedVolatility && <td className="text-center p-2 text-sm">{formatPercent(put?.impliedVolatility || 0)}</td>}
+                      {visibleColumns.openInterest && <td className="text-center p-2 text-sm">{put?.openInterest || 0}</td>}
+                      {visibleColumns.volume && <td className="text-center p-2 text-sm">{put?.volume || 0}</td>}
+                      {visibleColumns.ask && <td className="text-center p-2 text-sm">{formatCurrency(put?.ask || 0)}</td>}
+                      {visibleColumns.bid && <td className="text-center p-2 text-sm">{formatCurrency(put?.bid || 0)}</td>}
+                      {visibleColumns.last && <td className="text-center p-2 text-sm font-medium">{formatCurrency(put?.lastPrice || 0)}</td>}
                     </tr>
                   );
                 })}
@@ -413,10 +528,13 @@ const OptionsView: React.FC<OptionsViewProps> = ({ symbol }) => {
           
           <div className="mt-4 text-xs text-slate-500 dark:text-slate-400">
             <p>
-              <strong>Legend:</strong> Last = Last Price, Bid/Ask = Bid/Ask Price, Vol = Volume, OI = Open Interest, IV = Implied Volatility
+              <strong>Legend:</strong> Last = Last Price, Bid/Ask = Bid/Ask Price, Vol = Volume, OI = Open Interest, IV = Implied Volatility, Greeks: Δ=Delta, Γ=Gamma, Θ=Theta, ν=Vega, ρ=Rho
             </p>
             <p className="mt-1">
               Highlighted rows indicate strikes near the current stock price ({formatCurrency(optionsData.stockPrice)})
+            </p>
+            <p className="mt-1">
+              Use the "Columns" button to show/hide additional data columns including Greeks.
             </p>
           </div>
         </div>
