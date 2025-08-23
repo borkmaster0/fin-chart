@@ -41,7 +41,6 @@ function App() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showPortfolioDialog, setShowPortfolioDialog] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [currentView, setCurrentView] = useState<'chart' | 'portfolio' | 'backtesting' | 'advanced' | 'bonds' | 'prediction'>('chart');
   const [currentView, setCurrentView] = useState<'chart' | 'portfolio' | 'backtesting' | 'advanced' | 'bonds' | 'prediction' | 'options'>('chart');
 
   // Load saved symbol on app initialization
