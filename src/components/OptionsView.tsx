@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Target, RefreshCw, Calendar, TrendingUp, TrendingDown } from 'lucide-react';
 import { fetchSymbolOptionsChain, OptionStraddleResponse, OptionStraddle } from '../utils/api';
+import { saveOptionsColumnSettings, loadOptionsColumnSettings, OptionsColumnSettings } from '../utils/db';
 
 interface OptionsViewProps {
   symbol: string;
@@ -39,6 +40,7 @@ const OptionsView: React.FC<OptionsViewProps> = ({ symbol }) => {
   const [error, setError] = useState<string | null>(null);
   const [selectedExpiry, setSelectedExpiry] = useState<string>('');
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isSettingsInitialized, setIsSettingsInitialized] = useState(false);
   const [showColumnSettings, setShowColumnSettings] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState({
     last: true,
@@ -59,6 +61,41 @@ const OptionsView: React.FC<OptionsViewProps> = ({ symbol }) => {
   ]);
   const [draggedColumn, setDraggedColumn] = useState<string | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
+
+  // Load column settings from IndexedDB when component mounts
+  useEffect(() => {
+    const loadSavedColumnSettings = async () => {
+      try {
+        const settings = await loadOptionsColumnSettings();
+        if (settings) {
+          setVisibleColumns(settings.visibleColumns);
+          setColumnOrder(settings.columnOrder);
+        }
+        setIsSettingsInitialized(true);
+      } catch (error) {
+        console.error('Failed to load column settings:', error);
+        setIsSettingsInitialized(true);
+      }
+    };
+    loadSavedColumnSettings();
+  }, []);
+
+  // Save column settings to IndexedDB whenever they change
+  useEffect(() => {
+    if (!isSettingsInitialized) return;
+
+    const saveColumnSettings = async () => {
+      try {
+        await saveOptionsColumnSettings({
+          visibleColumns,
+          columnOrder
+        });
+      } catch (error) {
+        console.error('Failed to save column settings:', error);
+      }
+    };
+    saveColumnSettings();
+  }, [visibleColumns, columnOrder, isSettingsInitialized]);
 
   useEffect(() => {
     const storedDarkMode = localStorage.getItem('darkMode');

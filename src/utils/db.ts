@@ -384,3 +384,45 @@ export async function addDividendToCash(
     relatedTransactionId
   });
 }
+
+// Options column settings functions
+export interface OptionsColumnSettings {
+  visibleColumns: {
+    last: boolean;
+    bid: boolean;
+    ask: boolean;
+    volume: boolean;
+    openInterest: boolean;
+    impliedVolatility: boolean;
+    delta: boolean;
+    gamma: boolean;
+    theta: boolean;
+    vega: boolean;
+    rho: boolean;
+  };
+  columnOrder: string[];
+}
+
+export async function saveOptionsColumnSettings(settings: OptionsColumnSettings): Promise<void> {
+  const db = await initDB();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(STORE_NAMES.settings, 'readwrite');
+    const store = transaction.objectStore(STORE_NAMES.settings);
+    const request = store.put(settings, 'optionsColumnSettings');
+
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve();
+  });
+}
+
+export async function loadOptionsColumnSettings(): Promise<OptionsColumnSettings | null> {
+  const db = await initDB();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(STORE_NAMES.settings, 'readonly');
+    const store = transaction.objectStore(STORE_NAMES.settings);
+    const request = store.get('optionsColumnSettings');
+
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result || null);
+  });
+}
