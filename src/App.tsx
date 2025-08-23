@@ -11,6 +11,7 @@ import BacktestingView from './components/BacktestingView';
 import CompareView from './components/CompareView';
 import BondsView from './components/BondsView';
 import PredictionView from './components/PredictionView';
+import OptionsView from './components/OptionsView';
 import { fetchChartData } from './utils/api';
 import { ChartData } from './types';
 import { loadSettings, saveCurrentSymbol, loadCurrentSymbol } from './utils/db';
@@ -41,6 +42,7 @@ function App() {
   const [showPortfolioDialog, setShowPortfolioDialog] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [currentView, setCurrentView] = useState<'chart' | 'portfolio' | 'backtesting' | 'advanced' | 'bonds' | 'prediction'>('chart');
+  const [currentView, setCurrentView] = useState<'chart' | 'portfolio' | 'backtesting' | 'advanced' | 'bonds' | 'prediction' | 'options'>('chart');
 
   // Load saved symbol on app initialization
   useEffect(() => {
@@ -187,7 +189,8 @@ function App() {
     { id: 'backtesting', label: 'Backtesting', icon: TrendingUp },
     { id: 'advanced', label: 'Advanced', icon: LineChart },
     { id: 'bonds', label: 'Bonds', icon: LineChart },
-    { id: 'prediction', label: 'Prediction', icon: Target }
+    { id: 'prediction', label: 'Prediction', icon: Target },
+    { id: 'options', label: 'Options', icon: Target }
   ];
 
   return (
@@ -427,6 +430,10 @@ function App() {
 
         {currentView === 'prediction' && (
           <PredictionView />
+        )}
+
+        {currentView === 'options' && (
+          <OptionsView symbol={symbol} />
         )}
       </main>
       
