@@ -61,33 +61,39 @@ export interface CandlestickResponse {
 }
 
 export interface OptionStraddleResponse {
-  contract: string;
-  call: {
-    call_ask: number;
-    call_bid: number;
-    call_delta: number;
-    call_gamma: number;
-    call_iv: number;
-    call_last_price: number;
-    call_open_interest: number;
-    call_rho: number;
-    call_theta: number;
-    call_volume: number;
-    call_vega: number;
-  };
-  put: {
-    put_ask: number;
-    put_bid: number;
-    put_delta: number;
-    put_gamma: number;
-    put_iv: number;
-    put_last_price: number;
-    put_open_interest: number;
-    put_rho: number;
-    put_theta: number;
-    put_volume: number;
-    put_vega: number;
-  }
+  source: string;
+  stock: string;
+  stockPrice: number;
+  interestRate: number;
+  volatility: number;
+  createdOn: string;
+  straddles: OptionStraddle[];
+}
+
+export interface OptionStraddle {
+  ot: string; // option contract
+  clp: number; // call last price
+  ca: number; // call ask
+  cb: number; // call bid
+  coi: number; // call open interest
+  cv: number; // call volume
+  civ: number; // call implied volatility
+  cde: number; // call delta
+  cga: number; // call gamma
+  cth: number; // call theta
+  cve: number; // call vega
+  crh: number; // call rho
+  plp: number; // put last price
+  pa: number; // put ask
+  pb: number; // put bid
+  poi: number; // put open interest
+  pv: number; // put volume
+  piv: number; // put implied volatility
+  pde: number; // put delta
+  pga: number; // put gamma
+  pth: number; // put theta
+  pve: number; // put vega
+  prh: number; // put rho
 }
 
 export async function fetchMostActiveStocks(symbol: string): Promise<StockArray> {
@@ -463,14 +469,15 @@ export async function fetchSymbolOptionsChain(
   ticker: string
 ): Promise<OptionStraddleResponse> {
   const url = `https://corsproxy.io/?https://hcapr4ndhwksq5dq7ird3yujpq0edbbt.lambda-url.us-east-1.on.aws/api/options/straddle/${ticker}`;
+  
   try {
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`HTTP error! Status: ${response.status}`);
-      const data = await response.json();
-      const transformedData = 'data'
     }
-    return optionsData;
+    
+    const data: OptionStraddleResponse = await response.json();
+    return data;
   } catch (error) {
     console.error('Error fetching options data:', error);
     throw new Error(error instanceof Error ? error.message : 'Failed to fetch options data');
