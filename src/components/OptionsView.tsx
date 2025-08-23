@@ -493,12 +493,12 @@ const OptionsView: React.FC<OptionsViewProps> = ({ symbol }) => {
           <Calendar className="h-5 w-5 text-primary" />
           <h3 className="text-lg font-semibold">Expiration Date</h3>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent">
           {expiries.map(expiry => (
             <button
               key={expiry}
               onClick={() => setSelectedExpiry(expiry)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
                 selectedExpiry === expiry
                   ? 'bg-primary text-white'
                   : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
