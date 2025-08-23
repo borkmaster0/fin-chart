@@ -5,7 +5,6 @@ import { ChartData } from '../types';
 import { formatTimeTooltip, formatCurrency } from '../utils/formatters';
 import { saveSettings, loadSettings } from '../utils/db';
 import DividendsTable from './DividendsTable';
-import OptionsView from './OptionsView';
 
 interface ChartContainerProps {
   data: ChartData | null;
@@ -403,17 +402,6 @@ const ChartContainer: React.FC<ChartContainerProps> = ({
             <Table size={16} />
             <span className="text-sm">Dividends & Splits</span>
           </button>
-          <button
-            onClick={() => setViewMode('options')}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-md transition-colors ${
-              viewMode === 'options'
-                ? 'bg-primary text-white'
-                : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
-            }`}
-          >
-            <Target size={16} />
-            <span className="text-sm">Options</span>
-          </button>
         </div>
 
         {viewMode === 'chart' && (
@@ -528,10 +516,6 @@ const ChartContainer: React.FC<ChartContainerProps> = ({
 
       {viewMode === 'table' && (
         <DividendsTable data={data} />
-      )}
-
-      {viewMode === 'options' && (
-        <OptionsView symbol={symbol} />
       )}
     </div>
   );
