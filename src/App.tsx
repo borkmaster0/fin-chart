@@ -394,6 +394,7 @@ function App() {
                   error={error} 
                   darkMode={darkMode}
                   timeframe={timeframe}
+                  symbol={symbol}
                 />
                 
                 {lastRefreshed && (

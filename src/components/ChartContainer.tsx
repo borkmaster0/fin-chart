@@ -1,10 +1,11 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { CandlestickSeries, AreaSeries, HistogramSeries, CrosshairMode, createChart, ColorType, SeriesMarker, createSeriesMarkers } from 'lightweight-charts';
-import { AlertTriangle, Loader, LineChart, CandlestickChart, Table } from 'lucide-react';
+import { AlertTriangle, Loader, LineChart, CandlestickChart, Table, Target } from 'lucide-react';
 import { ChartData } from '../types';
 import { formatTimeTooltip, formatCurrency } from '../utils/formatters';
 import { saveSettings, loadSettings } from '../utils/db';
 import DividendsTable from './DividendsTable';
+import OptionsView from './OptionsView';
 
 interface ChartContainerProps {
   data: ChartData | null;
@@ -12,6 +13,7 @@ interface ChartContainerProps {
   error: string | null;
   darkMode: boolean;
   timeframe?: string;
+  symbol?: string;
 }
 
 const ChartContainer: React.FC<ChartContainerProps> = ({ 
@@ -19,13 +21,14 @@ const ChartContainer: React.FC<ChartContainerProps> = ({
   isLoading, 
   error,
   darkMode,
-  timeframe = '1d'
+  timeframe = '1d',
+  symbol = ''
 }) => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [showDividends, setShowDividends] = useState(true);
   const [showSplits, setShowSplits] = useState(true);
   const [chartType, setChartType] = useState<'line' | 'candlestick'>('line');
-  const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
+  const [viewMode, setViewMode] = useState<'chart' | 'table' | 'options'>('chart');
   const [timezoneOffset, setTimezoneOffset] = useState(0);
   const [precision, setPrecision] = useState(2);
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -92,7 +95,9 @@ const ChartContainer: React.FC<ChartContainerProps> = ({
       toolTipRef.current = null;
     }
 
-    // Create new chart instance
+    // Create new chart instance only for chart view
+    if (viewMode !== 'chart') return;
+
     const chart = createChart(chartContainerRef.current, {
       layout: {
         background: { type: ColorType.Solid, color: darkMode ? '#1E293B' : '#FFFFFF' },
@@ -398,6 +403,17 @@ const ChartContainer: React.FC<ChartContainerProps> = ({
             <Table size={16} />
             <span className="text-sm">Dividends & Splits</span>
           </button>
+          <button
+            onClick={() => setViewMode('options')}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-md transition-colors ${
+              viewMode === 'options'
+                ? 'bg-primary text-white'
+                : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+            }`}
+          >
+            <Target size={16} />
+            <span className="text-sm">Options</span>
+          </button>
         </div>
 
         {viewMode === 'chart' && (
@@ -512,6 +528,10 @@ const ChartContainer: React.FC<ChartContainerProps> = ({
 
       {viewMode === 'table' && (
         <DividendsTable data={data} />
+      )}
+
+      {viewMode === 'options' && (
+        <OptionsView symbol={symbol} />
       )}
     </div>
   );
