@@ -53,6 +53,12 @@ const OptionsView: React.FC<OptionsViewProps> = ({ symbol }) => {
     vega: false,
     rho: false
   });
+  const [columnOrder, setColumnOrder] = useState([
+    'last', 'bid', 'ask', 'volume', 'openInterest', 'impliedVolatility', 
+    'delta', 'gamma', 'theta', 'vega', 'rho'
+  ]);
+  const [draggedColumn, setDraggedColumn] = useState<string | null>(null);
+  const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
 
   useEffect(() => {
     const storedDarkMode = localStorage.getItem('darkMode');
@@ -80,6 +86,10 @@ const OptionsView: React.FC<OptionsViewProps> = ({ symbol }) => {
       vega: false,
       rho: false
     });
+    setColumnOrder([
+      'last', 'bid', 'ask', 'volume', 'openInterest', 'impliedVolatility', 
+      'delta', 'gamma', 'theta', 'vega', 'rho'
+    ]);
   };
 
   const columnLabels = {
@@ -95,6 +105,55 @@ const OptionsView: React.FC<OptionsViewProps> = ({ symbol }) => {
     vega: 'Vega',
     rho: 'Rho'
   };
+
+  const handleDragStart = (e: React.DragEvent, column: string) => {
+    setDraggedColumn(column);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent, column: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverColumn(column);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverColumn(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, targetColumn: string) => {
+    e.preventDefault();
+    
+    if (!draggedColumn || draggedColumn === targetColumn) {
+      setDraggedColumn(null);
+      setDragOverColumn(null);
+      return;
+    }
+
+    const newOrder = [...columnOrder];
+    const draggedIndex = newOrder.indexOf(draggedColumn);
+    const targetIndex = newOrder.indexOf(targetColumn);
+
+    // Remove dragged column from its current position
+    newOrder.splice(draggedIndex, 1);
+    
+    // Insert dragged column at target position
+    newOrder.splice(targetIndex, 0, draggedColumn);
+    
+    setColumnOrder(newOrder);
+    setDraggedColumn(null);
+    setDragOverColumn(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedColumn(null);
+    setDragOverColumn(null);
+  };
+
+  // Get ordered visible columns
+  const orderedVisibleColumns = columnOrder.filter(col => 
+    visibleColumns[col as keyof typeof visibleColumns]
+  );
 
   const parseOptionContract = (contract: string): { expiry: string; strike: number; type: 'call' | 'put' } => {
     // Example: QQQ250825C00450000
@@ -319,7 +378,7 @@ const OptionsView: React.FC<OptionsViewProps> = ({ symbol }) => {
   }
 
   // Count visible columns for dynamic colspan
-  const visibleColumnCount = Object.values(visibleColumns).filter(Boolean).length;
+  const visibleColumnCount = orderedVisibleColumns.length;
 
   const organizedOptions = organizeOptionsByExpiry(optionsData.straddles);
   const expiries = Object.keys(organizedOptions).sort((a, b) => {
@@ -377,16 +436,44 @@ const OptionsView: React.FC<OptionsViewProps> = ({ symbol }) => {
                   </button>
                 </div>
                 <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {Object.entries(columnLabels).map(([key, label]) => (
-                    <label key={key} className="flex items-center gap-2 text-sm">
+                  <div className="mb-3 text-xs text-slate-600 dark:text-slate-400">
+                    Drag columns to reorder them in the table
+                  </div>
+                  {columnOrder.map((key) => (
+                    <div
+                      key={key}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, key)}
+                      onDragOver={(e) => handleDragOver(e, key)}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => handleDrop(e, key)}
+                      onDragEnd={handleDragEnd}
+                      className={`flex items-center gap-2 text-sm p-2 rounded cursor-move transition-colors ${
+                        draggedColumn === key 
+                          ? 'opacity-50' 
+                          : dragOverColumn === key 
+                          ? 'bg-blue-100 dark:bg-blue-900/30' 
+                          : 'hover:bg-slate-100 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1 text-slate-400">
+                        <div className="w-1 h-1 bg-current rounded-full"></div>
+                        <div className="w-1 h-1 bg-current rounded-full"></div>
+                        <div className="w-1 h-1 bg-current rounded-full"></div>
+                        <div className="w-1 h-1 bg-current rounded-full"></div>
+                        <div className="w-1 h-1 bg-current rounded-full"></div>
+                        <div className="w-1 h-1 bg-current rounded-full"></div>
+                      </div>
                       <input
                         type="checkbox"
                         checked={visibleColumns[key as keyof typeof visibleColumns]}
                         onChange={() => toggleColumn(key as keyof typeof visibleColumns)}
                         className="form-checkbox h-4 w-4 text-primary rounded border-slate-300 dark:border-slate-600"
                       />
-                      <span className="text-slate-700 dark:text-slate-300">{label}</span>
-                    </label>
+                      <span className="text-slate-700 dark:text-slate-300 flex-1">
+                        {columnLabels[key as keyof typeof columnLabels]}
+                      </span>
+                    </div>
                   ))}
                 </div>
                 <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
@@ -445,31 +532,39 @@ const OptionsView: React.FC<OptionsViewProps> = ({ symbol }) => {
                 </tr>
                 <tr className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
                   {/* Call Sub-headers */}
-                  {visibleColumns.last && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">Last</th>}
-                  {visibleColumns.bid && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">Bid</th>}
-                  {visibleColumns.ask && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">Ask</th>}
-                  {visibleColumns.volume && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">Vol</th>}
-                  {visibleColumns.openInterest && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">OI</th>}
-                  {visibleColumns.impliedVolatility && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">IV</th>}
-                  {visibleColumns.delta && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">Δ</th>}
-                  {visibleColumns.gamma && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">Γ</th>}
-                  {visibleColumns.theta && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">Θ</th>}
-                  {visibleColumns.vega && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">ν</th>}
-                  {visibleColumns.rho && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">ρ</th>}
+                  {orderedVisibleColumns.map(column => (
+                    <th key={`call-${column}`} className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">
+                      {column === 'last' && 'Last'}
+                      {column === 'bid' && 'Bid'}
+                      {column === 'ask' && 'Ask'}
+                      {column === 'volume' && 'Vol'}
+                      {column === 'openInterest' && 'OI'}
+                      {column === 'impliedVolatility' && 'IV'}
+                      {column === 'delta' && 'Δ'}
+                      {column === 'gamma' && 'Γ'}
+                      {column === 'theta' && 'Θ'}
+                      {column === 'vega' && 'ν'}
+                      {column === 'rho' && 'ρ'}
+                    </th>
+                  ))}
                   {/* Strike */}
                   <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">Price</th>
                   {/* Put Sub-headers */}
-                  {visibleColumns.rho && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">ρ</th>}
-                  {visibleColumns.vega && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">ν</th>}
-                  {visibleColumns.theta && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">Θ</th>}
-                  {visibleColumns.gamma && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">Γ</th>}
-                  {visibleColumns.delta && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">Δ</th>}
-                  {visibleColumns.impliedVolatility && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">IV</th>}
-                  {visibleColumns.openInterest && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">OI</th>}
-                  {visibleColumns.volume && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">Vol</th>}
-                  {visibleColumns.ask && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">Ask</th>}
-                  {visibleColumns.bid && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">Bid</th>}
-                  {visibleColumns.last && <th className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">Last</th>}
+                  {orderedVisibleColumns.slice().reverse().map(column => (
+                    <th key={`put-${column}`} className="text-center p-2 text-sm font-medium text-slate-600 dark:text-slate-400">
+                      {column === 'last' && 'Last'}
+                      {column === 'bid' && 'Bid'}
+                      {column === 'ask' && 'Ask'}
+                      {column === 'volume' && 'Vol'}
+                      {column === 'openInterest' && 'OI'}
+                      {column === 'impliedVolatility' && 'IV'}
+                      {column === 'delta' && 'Δ'}
+                      {column === 'gamma' && 'Γ'}
+                      {column === 'theta' && 'Θ'}
+                      {column === 'vega' && 'ν'}
+                      {column === 'rho' && 'ρ'}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
@@ -486,17 +581,21 @@ const OptionsView: React.FC<OptionsViewProps> = ({ symbol }) => {
                       }`}
                     >
                       {/* Call Data */}
-                      {visibleColumns.last && <td className="text-center p-2 text-sm font-medium">{formatCurrency(call?.lastPrice || 0)}</td>}
-                      {visibleColumns.bid && <td className="text-center p-2 text-sm">{formatCurrency(call?.bid || 0)}</td>}
-                      {visibleColumns.ask && <td className="text-center p-2 text-sm">{formatCurrency(call?.ask || 0)}</td>}
-                      {visibleColumns.volume && <td className="text-center p-2 text-sm">{call?.volume || 0}</td>}
-                      {visibleColumns.openInterest && <td className="text-center p-2 text-sm">{call?.openInterest || 0}</td>}
-                      {visibleColumns.impliedVolatility && <td className="text-center p-2 text-sm">{formatPercent(call?.impliedVolatility || 0)}</td>}
-                      {visibleColumns.delta && <td className="text-center p-2 text-sm">{formatGreek(call?.delta || 0)}</td>}
-                      {visibleColumns.gamma && <td className="text-center p-2 text-sm">{formatGreek(call?.gamma || 0)}</td>}
-                      {visibleColumns.theta && <td className="text-center p-2 text-sm">{formatGreek(call?.theta || 0)}</td>}
-                      {visibleColumns.vega && <td className="text-center p-2 text-sm">{formatGreek(call?.vega || 0)}</td>}
-                      {visibleColumns.rho && <td className="text-center p-2 text-sm">{formatGreek(call?.rho || 0)}</td>}
+                      {orderedVisibleColumns.map(column => (
+                        <td key={`call-${column}-${strike}`} className="text-center p-2 text-sm font-medium">
+                          {column === 'last' && formatCurrency(call?.lastPrice || 0)}
+                          {column === 'bid' && formatCurrency(call?.bid || 0)}
+                          {column === 'ask' && formatCurrency(call?.ask || 0)}
+                          {column === 'volume' && (call?.volume || 0)}
+                          {column === 'openInterest' && (call?.openInterest || 0)}
+                          {column === 'impliedVolatility' && formatPercent(call?.impliedVolatility || 0)}
+                          {column === 'delta' && formatGreek(call?.delta || 0)}
+                          {column === 'gamma' && formatGreek(call?.gamma || 0)}
+                          {column === 'theta' && formatGreek(call?.theta || 0)}
+                          {column === 'vega' && formatGreek(call?.vega || 0)}
+                          {column === 'rho' && formatGreek(call?.rho || 0)}
+                        </td>
+                      ))}
                       
                       {/* Strike */}
                       <td className={`text-center p-2 font-bold ${
@@ -508,17 +607,21 @@ const OptionsView: React.FC<OptionsViewProps> = ({ symbol }) => {
                       </td>
                       
                       {/* Put Data */}
-                      {visibleColumns.rho && <td className="text-center p-2 text-sm">{formatGreek(put?.rho || 0)}</td>}
-                      {visibleColumns.vega && <td className="text-center p-2 text-sm">{formatGreek(put?.vega || 0)}</td>}
-                      {visibleColumns.theta && <td className="text-center p-2 text-sm">{formatGreek(put?.theta || 0)}</td>}
-                      {visibleColumns.gamma && <td className="text-center p-2 text-sm">{formatGreek(put?.gamma || 0)}</td>}
-                      {visibleColumns.delta && <td className="text-center p-2 text-sm">{formatGreek(put?.delta || 0)}</td>}
-                      {visibleColumns.impliedVolatility && <td className="text-center p-2 text-sm">{formatPercent(put?.impliedVolatility || 0)}</td>}
-                      {visibleColumns.openInterest && <td className="text-center p-2 text-sm">{put?.openInterest || 0}</td>}
-                      {visibleColumns.volume && <td className="text-center p-2 text-sm">{put?.volume || 0}</td>}
-                      {visibleColumns.ask && <td className="text-center p-2 text-sm">{formatCurrency(put?.ask || 0)}</td>}
-                      {visibleColumns.bid && <td className="text-center p-2 text-sm">{formatCurrency(put?.bid || 0)}</td>}
-                      {visibleColumns.last && <td className="text-center p-2 text-sm font-medium">{formatCurrency(put?.lastPrice || 0)}</td>}
+                      {orderedVisibleColumns.slice().reverse().map(column => (
+                        <td key={`put-${column}-${strike}`} className="text-center p-2 text-sm font-medium">
+                          {column === 'last' && formatCurrency(put?.lastPrice || 0)}
+                          {column === 'bid' && formatCurrency(put?.bid || 0)}
+                          {column === 'ask' && formatCurrency(put?.ask || 0)}
+                          {column === 'volume' && (put?.volume || 0)}
+                          {column === 'openInterest' && (put?.openInterest || 0)}
+                          {column === 'impliedVolatility' && formatPercent(put?.impliedVolatility || 0)}
+                          {column === 'delta' && formatGreek(put?.delta || 0)}
+                          {column === 'gamma' && formatGreek(put?.gamma || 0)}
+                          {column === 'theta' && formatGreek(put?.theta || 0)}
+                          {column === 'vega' && formatGreek(put?.vega || 0)}
+                          {column === 'rho' && formatGreek(put?.rho || 0)}
+                        </td>
+                      ))}
                     </tr>
                   );
                 })}
@@ -535,6 +638,9 @@ const OptionsView: React.FC<OptionsViewProps> = ({ symbol }) => {
             </p>
             <p className="mt-1">
               Use the "Columns" button to show/hide additional data columns including Greeks.
+            </p>
+            <p className="mt-1">
+              Drag columns in the settings menu to reorder them in the table.
             </p>
           </div>
         </div>
